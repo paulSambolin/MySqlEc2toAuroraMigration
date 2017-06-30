@@ -1,0 +1,9 @@
+\i ./sweetskills/dml/populate_group.sql
+\i ./sweetskills/dml/populate_person.sql
+\i ./sweetskills/dml/populate_project.sql
+\i ./sweetskills/dml/populate_party.sql
+\i ./sweetskills/dml/populate_capability.sql
+\i ./sweetskills/dml/populate_project_staff.sql
+\i ./sweetskills/dml/populate_project_cap.sql
+\i ./sweetskills/dml/populate_cap_assessment.sql
+\i ./sweetskills/dml/populate_educ_mtl.sql

@@ -1,0 +1,221 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Sweet Skills network infrastructure",
+    "Metadata": {
+        "AWS::CloudFormation::Interface" : {
+            "ParameterGroups" : [
+                {
+                    "Label" : { "default" : "Resource tagging" },
+                    "Parameters" : [ "Initiative", "Project" ]
+                },
+                {
+                    "Label" : { "default" : "General information" },
+                    "Parameters" : [ "Environment", "PrimaryAvailabilityZone", "SecondaryAvailabilityZone" ]
+                },
+                {
+                    "Label" : { "default" : "Network configuration" },
+                    "Parameters" : [ "VPCCidrBlock", "NYOfficeCidr" ]
+                }
+            ],
+            "ParameterLabels" : {
+                "PrimaryAvailabilityZone" : { "default" : "Primary availability zone" },
+                "SecondaryAvailabilityZone" : { "default" : "Secondary availability zone" },
+                "VPCCidrBlock" : { "default" : "VPC CIDR block" },
+                "NYOfficeCidr" : { "default" : "NY office CIDR block" }
+            }
+        }
+    },
+    "Parameters": {
+        "VPCCidrBlock": {
+            "Description": "The CIDR block to use for the VPC, i.e. 10.0.0.0/18",
+            "Type": "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default": "10.0.0.0/18",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+        },
+        "NYOfficeCidr": {
+            "Description": "The CIDR block to use for the VPC, i.e. 10.0.0.0/18",
+            "Type": "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default": "64.238.123.254/32",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+        },
+        "Environment": {
+            "Description": "The name of the environment for these resources",
+            "Type": "String",
+            "Default": "development",
+            "AllowedValues": [ "personal", "development", "stage", "production" ],
+            "ConstraintDescription": "Must be one of personal, development, stage, or production"
+        },
+        "Project": {
+            "Description": "The name of the project for these resources",
+            "Type": "String",
+            "Default": "sweet-skills"
+        },
+        "Initiative": {
+            "Description": "The name of the initiative for these resources",
+            "Type": "String",
+            "Default": "honey-badger"
+        },
+        "PrimaryAvailabilityZone": {
+            "Description": "The primary availability zone for AWS resources",
+            "Type": "String",
+            "Default": "us-east-1b",
+            "AllowedValues": [ "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e" ]
+        },
+        "SecondaryAvailabilityZone": {
+            "Description": "The secondary availability zone for AWS resources, should be different than the PrimaryAvailabilityZone param value",
+            "Type": "String",
+            "Default": "us-east-1c",
+            "AllowedValues": [ "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e" ]
+        }
+    },
+    "Mappings": { },
+    "Conditions": { },
+    "Resources": {
+        
+        "VPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": { "Ref": "VPCCidrBlock" },
+                "EnableDnsSupport": "true",
+                "EnableDnsHostnames": "true",
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project"  } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "InternetGatewayAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": { "Ref": "VPC" },
+                "InternetGatewayId": { "Ref": "InternetGateway" }
+            }
+        },
+
+        "PublicRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": { "Ref": "VPC" },
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "InternetEgressRoute": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "InternetGatewayAttachment",
+            "Properties": {
+                "RouteTableId": { "Ref": "PublicRouteTable" },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": { "Ref": "InternetGateway" }
+            }
+        },
+
+        "ApplicationSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": { "Ref": "PrimaryAvailabilityZone" },
+                "VpcId": { "Ref": "VPC" },
+                "CidrBlock": "10.0.1.0/24",
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "ApplicationSubnetRouteTableAssoc": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "ApplicationSubnet" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        },
+
+        "DatabaseSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": { "Ref": "PrimaryAvailabilityZone" },
+                "VpcId": { "Ref": "VPC" },
+                "CidrBlock": "10.0.5.0/24",
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "DatabaseSubnet1RouteTableAssoc": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "DatabaseSubnet1" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        },
+
+        "DatabaseSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": { "Ref": "SecondaryAvailabilityZone" },
+                "VpcId": { "Ref": "VPC" },
+                "CidrBlock": "10.0.6.0/24",
+                "Tags": [
+                    { "Key" : "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },
+
+        "DatabaseSubnet2RouteTableAssoc": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "DatabaseSubnet2" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        }
+
+    },
+    "Outputs": {
+        "VPCID": {
+            "Description": "The VPC Id",
+            "Value": { "Ref": "VPC" }
+        },
+        "ApplicationSubnetId": {
+            "Description": "The application subnet ID",
+            "Value": { "Ref": "ApplicationSubnet" }
+        },
+        "DatabaseSubnetId1": {
+            "Description": "The primary database subnet ID",
+            "Value": { "Ref": "DatabaseSubnet1" }
+        },
+        "DatabaseSubnetId2": {
+            "Description": "The secondary database subnet ID",
+            "Value": { "Ref": "DatabaseSubnet2" }
+        }
+    }
+}

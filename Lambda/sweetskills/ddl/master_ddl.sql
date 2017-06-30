@@ -1,0 +1,1 @@
+\i ./sweetskills/ddl/core_ddl.sql

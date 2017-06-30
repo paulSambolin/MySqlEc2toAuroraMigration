@@ -1,0 +1,219 @@
+
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Sweet Skills persistence",
+    "Metadata": {
+        "AWS::CloudFormation::Interface" : {
+            "ParameterGroups" : [
+                {
+                    "Label" : { "default" : "General information" },
+                    "Parameters" : [ "Environment", "PrimaryAvailabilityZone", "SecondaryAvailabilityZone" ]
+                },
+                {
+                    "Label" : { "default" : "Network configuration" },
+                    "Parameters" : [ "NYOfficeCidr", "PrimaryDatabaseSubnetId", "SecondaryDatabaseSubnetId" ]
+                },
+                {
+                    "Label" : { "default":"Database configuration" },
+                    "Parameters" : [ "DBName", "DBUserName", "DBPassword", "DBStorageSize", "DBInstanceClass", "DBInstanceId", "DBListeningPort" ]
+                }
+            ],
+            "ParameterLabels" : {
+                "PrimaryAvailabilityZone" : { "default" : "Primary availability zone" },
+                "SecondaryAvailabilityZone" : { "default" : "Secondary availability zone" },
+                "NYOfficeCidr" : { "default" : "NY office CIDR" },
+                "PrimaryDatabaseSubnetId" : { "default" : "Primary database subnet id" },
+                "SecondaryDatabaseSubnetId" : { "default" : "Secondary database subnet id" },
+                "DBName" : { "default" : "Name" },
+                "DBUserName" : { "default" : "Username" },
+                "DBPassword" : { "default" : "Password" },
+                "DBStorageSize" : { "default" : "Storage (GB)" },
+                "DBInstanceClass" : { "default" : "Instance class" },
+                "DBInstanceId" : { "default" : "Instance id" },
+                "DBListeningPort" : { "default" : "Listening port" }
+            }
+        }
+    },
+    "Parameters": {
+        "NYOfficeCidr": {
+            "Description": "The CIDR block to use for the VPC, i.e. 10.0.0.0/18",
+            "Type": "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default": "64.238.123.254/32",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+        },
+        "DBStorageSize" : {
+            "Type" : "Number",
+            "MinValue" : "5",
+            "MaxValue" : "100",
+            "Description" : "The database storage size in GB."
+        },
+        "DBInstanceClass" : {
+            "Type" : "String",
+            "AllowedValues" : ["db.t2.micro", "db.t2.small", "db.t2.medium", "db.t2.large", "db.m4.large"],
+            "Default" : "db.t2.micro",
+            "Description" : "The database class"
+        },
+        "DBInstanceId" : {
+            "Type" : "String",
+            "Description" : "A unique identifier for the database."
+        },
+        "DBName" : {
+            "Type" : "String",
+            "Description" : "The name of the new database to be created.",
+            "Default" : "sweetskillsDB",
+            "AllowedPattern" : "^[A-Za-z0-9]+$",
+            "ConstraintDescription" : "Must only contain alphanumeric characters (cannot be blank)."
+        },
+        "DBUserName" : {
+            "Type" : "String",
+            "Description" : "The name of the master user for the database.",
+            "Default" : "sweetskillsUser",
+            "AllowedPattern" : "^[A-Za-z0-9]+$",
+            "ConstraintDescription" : "Must only contain alphanumeric characters (cannot be blank)."
+        },
+        "DBPassword" : {
+            "Type" : "String",
+            "NoEcho": "true",
+            "Description" : "The password to be used for the master user of the database.",
+            "AllowedPattern" : "^[^@\"\\/]{8,}$",
+            "ConstraintDescription" : "Can be any printable ASCII character except /, \", or @ (min 8 characters)."
+        },
+        "DBListeningPort" : {
+            "Type" : "Number",
+            "Default" : "5432",
+            "Description" : "The listening port for the database."
+        },
+        "PrimaryDatabaseSubnetId": {
+            "Type" : "AWS::EC2::Subnet::Id",
+            "Description" : "The primary database subnet id."
+        },
+        "SecondaryDatabaseSubnetId": {
+            "Type" : "AWS::EC2::Subnet::Id",
+            "Description" : "The secondary database subnet id."
+        },
+        "Environment": {
+            "Description": "The name of the environment for these resources",
+            "Type": "String",
+            "Default": "development",
+            "AllowedValues": ["development","stage","production","personal"],
+            "ConstraintDescription": "Must be one of development, stage, production or personal"
+        },
+        "PrimaryAvailabilityZone": {
+            "Description": "The primary availability zone for AWS resources",
+            "Type": "String",
+            "Default": "us-east-1b",
+            "AllowedValues": ["us-east-1b","us-east-1c","us-east-1d","us-east-1e"]
+        },
+        "SecondaryAvailabilityZone": {
+            "Description": "The secondary availability zone for AWS resources",
+            "Type": "String",
+            "Default": "us-east-1c",
+            "AllowedValues": ["us-east-1b","us-east-1c","us-east-1d","us-east-1e"]
+        },
+        "Project": {
+            "Description": "The name of the project for these resources",
+            "Type": "String",
+            "Default": "sweet-skills"
+        },
+        "Initiative": {
+            "Description": "The name of the initiative for these resources",
+            "Type": "String",
+            "Default": "honey-badger"
+        },
+        "ApiSecurityGroup" : {
+            "Description": "The Security Group used on api",
+            "Type": "String"
+        },
+        "DbSecurityGroup" : {
+            "Description": "The Security Group used on DB",
+            "Type": "String"
+        }
+    },
+    "Mappings": {
+        "DBRetentionPeriod" : {
+            "personal":         { "period" : "0" },
+            "development":      { "period" : "0" },
+            "stage":            { "period" : "0" },
+            "production" :      { "period" : "7" }
+        }
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+
+        "DbSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupDescription": "The Sweet Skills RDS database subnet group.",
+                "SubnetIds": [ { "Ref": "PrimaryDatabaseSubnetId" }, { "Ref": "SecondaryDatabaseSubnetId" }],
+                "Tags": [
+                    { "Key": "env", "Value": { "Ref": "Environment" } },
+                    { "Key": "project", "Value": { "Ref": "Project" } },
+                    { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+                ]
+            }
+        },       
+        
+        "RDSInstance": {
+          "Type": "AWS::RDS::DBInstance",
+          "Properties": {
+            "AllocatedStorage": { "Ref" : "DBStorageSize" },
+            "DBInstanceClass": { "Ref" : "DBInstanceClass" },
+            "AllowMajorVersionUpgrade": "false",
+            "AutoMinorVersionUpgrade": "true",
+            "AvailabilityZone": { "Ref" : "PrimaryAvailabilityZone" },
+            "BackupRetentionPeriod": { "Fn::FindInMap": [ "DBRetentionPeriod", { "Ref": "Environment" }, "period" ] },
+            "DBInstanceIdentifier": { "Ref" : "DBInstanceId" },
+            "DBName": { "Ref" : "DBName" },
+            "DBSubnetGroupName": { "Ref" : "DbSubnetGroup" },
+            "Engine": "postgres",
+            "EngineVersion": "9.5.2",
+            "MasterUsername": { "Ref" : "DBUserName"},
+            "MasterUserPassword": { "Ref" : "DBPassword"},
+            "MultiAZ": "false",
+            "Port": { "Ref" : "DBListeningPort" },
+            "PubliclyAccessible": "true",
+            "StorageEncrypted": "false",
+            "StorageType": "standard",
+            "VPCSecurityGroups" : [ { "Ref" : "ApiSecurityGroup" }, { "Ref" : "DbSecurityGroup"}],
+            "Tags": [
+                { "Key": "env", "Value": { "Ref": "Environment" } },
+                { "Key": "project", "Value": { "Ref": "Project" } },
+                { "Key": "initiative", "Value": { "Ref": "Initiative" } }
+            ]
+          }
+        }
+        
+    },
+    "Outputs": {
+        "DBInstanceId": {
+            "Description": "The database instance id",
+            "Value": { "Ref": "DBInstanceId" }
+        },
+        "DBName": {
+            "Description": "The database name",
+            "Value": { "Ref": "DBName" }
+        },
+        "DBMasterUserName": {
+            "Description": "The database username",
+            "Value": { "Ref": "DBUserName" }
+        },
+        "DBMasterPassword": {
+            "Description": "The database password",
+            "Value": { "Ref": "DBPassword" }
+        },
+        "DBAddress": {
+            "Description": "The database address",
+            "Value": { "Fn::GetAtt": ["RDSInstance", "Endpoint.Address"] }
+        },
+        "DBListeningPort": {
+            "Description": "The database listening port",
+            "Value": { "Fn::GetAtt": ["RDSInstance", "Endpoint.Port"] }
+        }
+    }
+}
+    
