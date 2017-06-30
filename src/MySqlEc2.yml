@@ -1,0 +1,579 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'MySql on an EC2 instance in a vpc'
+
+Parameters:
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Default: MySqlServerKeyPair
+    ConstraintDescription: Can contain only ASCII characters.
+  DBName:
+    Type: String
+    Description: MySQL database name
+    Default: ParivedaTestDB
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric
+      characters
+  DBUsername:
+    Type: String
+    Description: User name for MySQL database access
+    Default: ParivedaUser
+#    NoEcho: 'true'
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric
+      characters
+  DBPassword:
+    Type: String
+    Description: Password for MySQL database access
+    Default: Pariveda1
+#    NoEcho: 'true'
+    MinLength: '1'
+    MaxLength: '41'
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: Must contain only alphanumeric characters
+  DBRootPassword:
+    Type: String
+    Description: Root password for MySQL
+    Default: Pariveda1
+#    NoEcho: 'true'
+    MinLength: '1'
+    MaxLength: '41'
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: Must contain only alphanumeric characters
+  InstanceType:
+    Type: String
+    Description: WebServer EC2 instance type
+    Default: m1.small
+    AllowedValues:
+    - t1.micro
+    - t2.micro
+    - t2.small
+    - t2.medium
+    - m1.small
+    - m1.medium
+    - m1.large
+    - m1.xlarge
+    - m2.xlarge
+    - m2.2xlarge
+    - m2.4xlarge
+    - m3.medium
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    - c1.medium
+    - c1.xlarge
+    - c3.large
+    - c3.xlarge
+    - c3.2xlarge
+    - c3.4xlarge
+    - c3.8xlarge
+    - g2.2xlarge
+    - r3.large
+    - r3.xlarge
+    - r3.2xlarge
+    - r3.4xlarge
+    - r3.8xlarge
+    - i2.xlarge
+    - i2.2xlarge
+    - i2.4xlarge
+    - i2.8xlarge
+    - hi1.4xlarge
+    - hs1.8xlarge
+    - cr1.8xlarge
+    - cc2.8xlarge
+    - cg1.4xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  SSHLocation:
+    Type: String
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Default: 0.0.0.0/0
+    MinLength: '9'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+Mappings:
+  AWSInstanceType2Arch:
+    t1.micro:
+      Arch: PV64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    m1.small:
+      Arch: PV64
+    m1.medium:
+      Arch: PV64
+    m1.large:
+      Arch: PV64
+    m1.xlarge:
+      Arch: PV64
+    m2.xlarge:
+      Arch: PV64
+    m2.2xlarge:
+      Arch: PV64
+    m2.4xlarge:
+      Arch: PV64
+    m3.medium:
+      Arch: HVM64
+    m3.large:
+      Arch: HVM64
+    m3.xlarge:
+      Arch: HVM64
+    m3.2xlarge:
+      Arch: HVM64
+    c1.medium:
+      Arch: PV64
+    c1.xlarge:
+      Arch: PV64
+    c3.large:
+      Arch: HVM64
+    c3.xlarge:
+      Arch: HVM64
+    c3.2xlarge:
+      Arch: HVM64
+    c3.4xlarge:
+      Arch: HVM64
+    c3.8xlarge:
+      Arch: HVM64
+    g2.2xlarge:
+      Arch: HVMG2
+    r3.large:
+      Arch: HVM64
+    r3.xlarge:
+      Arch: HVM64
+    r3.2xlarge:
+      Arch: HVM64
+    r3.4xlarge:
+      Arch: HVM64
+    r3.8xlarge:
+      Arch: HVM64
+    i2.xlarge:
+      Arch: HVM64
+    i2.2xlarge:
+      Arch: HVM64
+    i2.4xlarge:
+      Arch: HVM64
+    i2.8xlarge:
+      Arch: HVM64
+    hi1.4xlarge:
+      Arch: HVM64
+    hs1.8xlarge:
+      Arch: HVM64
+    cr1.8xlarge:
+      Arch: HVM64
+    cc2.8xlarge:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      PV64: ami-50842d38
+      HVM64: ami-08842d60
+      HVMG2: ami-3a329952
+    us-west-2:
+      PV64: ami-af86c69f
+      HVM64: ami-8786c6b7
+      HVMG2: ami-47296a77
+    us-west-1:
+      PV64: ami-c7a8a182
+      HVM64: ami-cfa8a18a
+      HVMG2: ami-331b1376
+    eu-west-1:
+      PV64: ami-aa8f28dd
+      HVM64: ami-748e2903
+      HVMG2: ami-00913777
+    ap-southeast-1:
+      PV64: ami-20e1c572
+      HVM64: ami-d6e1c584
+      HVMG2: ami-fabe9aa8
+    ap-northeast-1:
+      PV64: ami-21072820
+      HVM64: ami-35072834
+      HVMG2: ami-5dd1ff5c
+    ap-southeast-2:
+      PV64: ami-8b4724b1
+      HVM64: ami-fd4724c7
+      HVMG2: ami-e98ae9d3
+    sa-east-1:
+      PV64: ami-9d6cc680
+      HVM64: ami-956cc688
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      PV64: ami-a857c591
+      HVM64: ami-ac57c595
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      PV64: ami-a03503bd
+      HVM64: ami-b43503a9
+      HVMG2: ami-b03503ad
+
+
+Resources:
+  # VPC:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: 10.0.0.0/16
+  #     EnableDnsSupport: 'true'
+  #     EnableDnsHostnames: 'true'
+  #     Tags:
+  #     - Key: Application
+  #       Value: MySqltoAurora
+
+  # InternetGateway:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #     - Key: Application
+  #       Value: MySqltoAurora
+
+  # InternetGatewayAttachment:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId:
+  #       Ref: VPC
+  #     InternetGatewayId:
+  #       Ref: InternetGateway
+
+  # PublicRouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId:
+  #       Ref: VPC
+  #     Tags:
+  #     - Key: Application
+  #       Value: MySqltoAurora
+
+  # InternetEgressRoute:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: InternetGatewayAttachment
+  #   Properties:
+  #     RouteTableId:
+  #       Ref: PublicRouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId:
+  #       Ref: InternetGateway
+
+  # PublicSubnet:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone: us-east-1b
+  #     VpcId:
+  #       Ref: VPC
+  #     CidrBlock: 10.0.1.0/24
+  #     Tags:
+  #     - Key: Application
+  #       Value: MySqltoAurora
+
+  # PublicSubnetRouteTableAssoc:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId:
+  #       Ref: PublicSubnet
+  #     RouteTableId:
+  #       Ref: PublicRouteTable
+
+  # PublicIp:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+
+  # IPAssoc:
+  #   Type: AWS::EC2::EIPAssociation
+  #   Properties:
+  #     InstanceId:
+  #       Ref: MySqlServer
+  #     EIP:
+  #       Ref: PublicIp
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, HTTPS, & SSH access to EC2 instance
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp:
+          Ref: SSHLocation
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '3306'
+        ToPort: '3306'
+        CidrIp: 0.0.0.0/0
+      # VpcId:
+      #   Ref: VPC
+      Tags:
+      - Key: Application
+        Value: MySqltoAurora
+
+  RootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+
+  RootRoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: RootRole
+
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Count: '1'
+      Handle:
+        Ref: WaitHandle
+      Timeout: '600'
+
+  MySqlServer:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          InstallAndRun:
+          - Install
+          - Configure
+        Install:
+          packages:
+            yum:
+              mysql: []
+              mysql-server: []
+              mysql-libs: []
+              httpd: []
+          files:
+            "/tmp/setup.mysql":
+              content:
+                Fn::Join:
+                - ''
+                - - 'CREATE DATABASE '
+                  - Ref: DBName
+                  - ";\n"
+                  - 'GRANT ALL ON '
+                  - Ref: DBName
+                  - ".* TO '"
+                  - Ref: DBUsername
+                  - "'@localhost IDENTIFIED BY '"
+                  - Ref: DBPassword
+                  - "';\n"
+              mode: '000400'
+              owner: root
+              group: root
+            "/etc/cfn/cfn-hup.conf":
+              content:
+                Fn::Join:
+                - ''
+                - - "[main]\n"
+                  - stack=
+                  - Ref: AWS::StackId
+                  - "\n"
+                  - region=
+                  - Ref: AWS::Region
+                  - "\n"
+              mode: '000400'
+              owner: root
+              group: root
+            "/etc/cfn/hooks.d/cfn-auto-reloader.conf":
+              content:
+                Fn::Join:
+                - ''
+                - - "[cfn-auto-reloader-hook]\n"
+                  - 'triggers=post.update'
+                  - 'path=Resources.MySqlServer.Metadata.AWS::CloudFormation::Init'
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - "         --stack "
+                  - Ref: AWS::StackName
+                  - "         --resource MySqlServer "
+                  - "         --configsets InstallAndRun "
+                  - "         --region "
+                  - Ref: AWS::Region
+                  - "\n"
+                  - 'runas=root'
+          services:
+            sysvinit:
+              mysqld:
+                enabled: 'true'
+                ensureRunning: 'true'
+              httpd:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                - "/etc/cfn/cfn-hup.conf"
+                - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+        Configure:
+          commands:
+            01_set_mysql_root_password:
+              command:
+                Fn::Join:
+                - ''
+                - - mysqladmin -u root password '
+                  - Ref: DBRootPassword
+                  - "'"
+              test:
+                Fn::Join:
+                - ''
+                - - "$(mysql "
+                  - Ref: DBUsername
+                  - " -u root --password='"
+                  - Ref: DBRootPassword
+                  - "' >/dev/null 2>&1 </dev/null); (( $? != 0 ))"
+            02_create_database:
+              command:
+                Fn::Join:
+                - ''
+                - - mysql -u root --password='
+                  - Ref: DBRootPassword
+                  - "' < /tmp/setup.mysql"
+              test:
+                Fn::Join:
+                - ''
+                - - "$(mysql "
+                  - Ref: DBUsername
+                  - " -u root --password='"
+                  - Ref: DBRootPassword
+                  - "' >/dev/null 2>&1 </dev/null); (( $? != 0 ))"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      SecurityGroupIds:
+      - Ref: SecurityGroup
+      # SubnetId:
+      #   Ref: PublicSubnet
+      Monitoring: 'true'
+      IamInstanceProfile:
+        Ref: RootRoleInstanceProfile
+      KeyName:
+        Ref: KeyPair
+      Tags:
+      - Key: Application
+        Value: MySqltoAurora
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum install -y aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - "/opt/aws/bin/cfn-init -v "
+            - "         --stack "
+            - Ref: AWS::StackName
+            - "         --resource MySqlServer "
+            - "         --configsets InstallAndRun "
+            - "         --region "
+            - Ref: AWS::Region
+            - "\n"
+            - "# Signal the status from cfn-init\n"
+            - "/opt/aws/bin/cfn-signal -s true -e $? "
+            - "         --stack "
+            - Ref: AWS::StackName
+            - "         --resource MySqlServer "
+            - "         --region "
+            - Ref: AWS::Region
+            - "'"
+            - Ref: WaitHandle
+            - "'\n"
+
+Outputs:
+  # VPC:
+  #   Description: The VPC where the MySql server is located
+  #   Value:
+  #     Ref: VPC
+  #   Export:
+  #     Name: MySqlVPCId
+  # PublicSubnet:
+  #   Description: The Subnet where the MySql server is located
+  #   Value:
+  #     Ref: PublicSubnet
+  #   Export:
+  #     Name: MySqlPublicSubnetId
+  # PublicIp:
+  #   Description: The IP address of the MySql server
+  #   Value:
+  #     Ref: PublicIp
+  #   Export:
+  #     Name: MySqlPublicIp
+  SecurityGroup:
+    Description: The security group assigned to the MySql server
+    Value:
+      Ref: SecurityGroup
+    Export:
+      Name: MySqlSecurityGroup
+  KeyPair:
+    Description: The key pair securing ssh connections to the MySql server
+    Value:
+      Ref: KeyPair
+    Export:
+      Name: MySqlKeyPair
+  DBName:
+    Description: The name of the database on the MySql server
+    Value:
+      Ref: DBName
+    Export:
+      Name: MySqlDBName
+  DBPassword:
+    Description: The password to the database on the MySql server
+    Value:
+      Ref: DBPassword
+    Export:
+      Name: MySqlDBPassword
+  DBRootPassword:
+    Description: The root password of the database on the MySql server
+    Value:
+      Ref: DBRootPassword
+    Export:
+      Name: MySqlDBRootPassword
+  MySqlServer:
+    Description: The ec2 instance id of the MySql server
+    Value:
+      Ref: MySqlServer
+    Export:
+      Name: MySqlServer
+  
+
+
+
