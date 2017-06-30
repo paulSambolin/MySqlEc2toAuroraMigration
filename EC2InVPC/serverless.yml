@@ -1,0 +1,257 @@
+service: aws-serverless-elk
+
+custom:
+  elasticsearch:
+    DomainName: elasticsearchinstance
+    Region: us-east-1
+    Index: firehose
+    Doctype: lambda
+    InstanceCount: 1
+    ZoneAwarenessEnabled: false
+    InstanceType: t2.small.elasticsearch
+
+provider:
+  name: aws
+
+package:
+  individually: true
+  exclude:
+    - "**/*"
+
+functions:
+
+resources:
+  Resources:
+    VPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsSupport: 'true'
+        EnableDnsHostnames: 'true'
+        Tags:
+        - Key: Application
+          Value: testvpc
+
+    InternetGateway:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+        Tags:
+        - Key: Application
+          Value: testvpc
+
+    InternetGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId:
+          Ref: VPC
+        InternetGatewayId:
+          Ref: InternetGateway
+
+    PublicRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: VPC
+        Tags:
+        - Key: Application
+          Value: testvpc
+
+    InternetEgressRoute:
+      Type: AWS::EC2::Route
+      DependsOn: InternetGatewayAttachment
+      Properties:
+        RouteTableId:
+          Ref: PublicRouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: InternetGateway
+
+    PublicSubnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        AvailabilityZone: us-east-1b
+        VpcId:
+          Ref: VPC
+        CidrBlock: 10.0.1.0/24
+        Tags:
+        - Key: Application
+          Value: testvpc
+
+    PublicSubnetRouteTableAssoc:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId:
+          Ref: PublicSubnet
+        RouteTableId:
+          Ref: PublicRouteTable
+
+    ElasticsearchPublicIp:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+
+    ElasticsearchServerIPAssoc:
+      Type: AWS::EC2::EIPAssociation
+      Properties:
+        InstanceId:
+          Ref: ElasticsearchServer
+        EIP:
+          Ref: ElasticsearchPublicIp
+
+    ElasticsearchSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Enable HTTP, HTTPS, & SSH access to EC2 instance
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9200'
+          ToPort: '9200'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9300'
+          ToPort: '9300'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5601'
+          ToPort: '5601'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          CidrIp: 0.0.0.0/0
+        VpcId:
+          Ref: VPC
+        Tags:
+        - Key: Application
+          Value: testvpc
+
+    WaitHandle:
+      Type: AWS::CloudFormation::WaitConditionHandle
+
+    WaitCondition:
+      Type: AWS::CloudFormation::WaitCondition
+      Properties:
+        Count: '1'
+        Handle:
+          Ref: WaitHandle
+        Timeout: '10000'
+
+    RootRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action:
+            - sts:AssumeRole
+        Path: "/"
+        Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*"
+
+    RootRoleInstanceProfile:
+      Type: AWS::IAM::InstanceProfile
+      Properties:
+        Path: "/"
+        Roles:
+        - Ref: RootRole
+
+    ElasticsearchServer:
+      Type: AWS::EC2::Instance
+      Properties:
+        ImageId: ami-8d4071e7
+        SecurityGroupIds:
+        - Ref: ElasticsearchSecurityGroup
+        SubnetId:
+          Ref: PublicSubnet
+        InstanceType: t2.micro
+        Monitoring: 'true'
+        IamInstanceProfile:
+          Ref: RootRoleInstanceProfile
+        KeyName: PaulTest
+        Tags:
+        - Key: Application
+          Value: testvpc
+        UserData:
+          Fn::Base64:
+            Fn::Join:
+            - "\n"
+            - - "#!/bin/bash -v"
+              - "# Update repositories"
+              - "wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -"
+              - "echo \"deb http://packages.elastic.co/elasticsearch/2.x/debian stable main\" > /etc/apt/sources.list.d/elasticsearch-2.x.list"
+              - "echo \"deb http://packages.elastic.co/logstash/2.3/debian stable main\" > /etc/apt/sources.list.d/logstash-2.x.list"
+              - "curl -sL https://deb.nodesource.com/setup_5.x | sudo -E bash -"
+              - "sleep 1"
+              - "apt-get -y update"
+              - "apt-get -y upgrade"
+              - "apt-get -y install python-setuptools"
+              - "easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz"
+              - "ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup"
+
+              - "# Install  & Elasticsearch"
+              - "apt-get -y install ruby ruby-dev logstash openjdk-8-jre-headless openjdk-8-jdk elasticsearch nodejs ntp python-pip"
+              - "update-ca-certificates -f"
+              - "/usr/share/elasticsearch/bin/plugin install cloud-aws -b"
+              - "/usr/share/elasticsearch/bin/plugin install mobz/elasticsearch-head"
+              - "echo \"cluster.name: PaulTest\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"cloud:\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"  aws:\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"    access_key: AKIAJE76CHQ26LKY2APA\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"    secret_key: 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\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"discovery:\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"  type: ec2\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"network.host: 0.0.0.0\" >> /etc/elasticsearch/elasticsearch.yml"
+              - "echo \"http.compression: true\" >> /etc/elasticsearch/elasticsearch.yml"
+
+              - "# Configure Logstash"
+              - "/opt/logstash/bin/plugin install logstash-input-kinesis"
+              - "echo \"input {\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"    http {\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"        port  => 6379\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"        codec => json_lines\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"    }\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"}\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"output {\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"    elasticsearch { hosts => [\"localhost:9200\"] }\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"    # stdout { codec => rubydebug }\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+              - "echo \"}\" >> /etc/logstash/conf.d/logstash-indexer.conf"
+
+              - "# Install Kibana"
+              - "wget -O /tmp/kibana-latest.tar.gz https://download.elastic.co/kibana/kibana/kibana-4.5.0-linux-x64.tar.gz"
+              - "tar zxf /tmp/kibana-latest.tar.gz -C /opt"
+              - "mv /opt/kibana-* /opt/kibana"
+              - "# Start services"
+              - "wget -O /etc/systemd/system/kibana.service https://raw.githubusercontent.com/guardian/elk-stack/master/config/systemd-kibana.service"
+              - "#TODO: start logstash endpoint with following command /opt/logstash/bin/logstash -e \"input { http { port => 6379 } } output { elasticsearch { hosts => [\"localhost:9200\"] } }\" "
+              - "systemctl start logstash && systemctl enable logstash"
+              - "systemctl start elasticsearch && systemctl enable elasticsearch"
+              - "systemctl start kibana && systemctl enable kibana"
+              - "while ! nc -z localhost 9200; do sleep 5; done; echo Elasticsearch is up!"
+              - "sleep 30"
+              - "# All is well, so signal CloudFormation with success."
+              - Fn::Join:
+                - ''
+                - - "/usr/local/bin/cfn-signal -s true -r \"AWS CodeDeploy Agent setup complete.\" '"
+                  - Ref: WaitHandle
+                  - "'"
