@@ -439,7 +439,7 @@ Resources:
             - "yum install wget -y\n"
             - "yum install mysql56-server -y\n"
 
-            - "# Start the MySQL server"
+            - "# Start the MySQL server\n"
             - "/etc/init.d/mysqld start\n"
 
             - "# Download setup script\n"
@@ -458,7 +458,7 @@ Resources:
             - "# Install percona xtra backup\n"
             - "yum --enablerepo=epel install libev -y\n"
             - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
-            - "yum install percona-xtrabackup-24\n"
+            - "yum install percona-xtrabackup-24 -y\n"
 
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
