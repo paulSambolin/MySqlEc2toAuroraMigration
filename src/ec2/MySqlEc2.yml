@@ -386,6 +386,7 @@ Resources:
                   - "USE "
                   - Ref: DBName
                   - ";\n"
+                  - "CREATE TABLE user (name VARCHAR(20), title VARCHAR(20));\n"
                   - "CREATE USER '"
                   - Ref: DBUsername
                   - "'@'localhost' IDENTIFIED BY '"
@@ -441,7 +442,7 @@ Resources:
             - "rpm -ivh mysql-community-release-el6-5.noarch.rpm\n"
             - "yum install mysql-server -y\n"
 
-            - "# Start the MySQL server"
+            - "# Start the MySQL server\n"
             - "/etc/init.d/mysqld start\n"
 
             - "# Download setup script\n"
@@ -457,10 +458,11 @@ Resources:
             - "# Run the setup script\n"
             - "mysql -u root < /tmp/setup.mysql\n"
 
-            - "# Install percona xtra backup\n"
-            - "yum --enablerepo=epel install libev -y\n"
-            - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
-            - "yum install percona-xtrabackup-24\n"
+            # Commented out for testing lambda client connections
+            # - "# Install percona xtra backup\n"
+            # - "yum --enablerepo=epel install libev -y\n"
+            # - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
+            # - "yum install percona-xtrabackup-24\n"
 
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
@@ -468,8 +470,8 @@ Resources:
             - Ref: WaitHandle
             - "'\n"
 
-# Commented out for testing
-# Outputs:
+Outputs:
+  # Commented out for testing
   # Output network and db connection information to the console
   # VPC:
   #   Description: The VPC where the MySql server is located
@@ -483,12 +485,6 @@ Resources:
   #     Ref: PublicSubnet
   #   Export:
   #     Name: MySqlPublicSubnetId
-  # PublicIp:
-  #   Description: The IP address of the MySql server
-  #   Value:
-  #     Ref: PublicIp
-  #   Export:
-  #     Name: MySqlPublicIp
   # SecurityGroup:
   #   Description: The security group assigned to the MySql server
   #   Value:
@@ -501,30 +497,43 @@ Resources:
   #     Ref: KeyPair
   #   Export:
   #     Name: MySqlKeyPair
-  # DBName:
-  #   Description: The name of the database on the MySql server
-  #   Value:
-  #     Ref: DBName
-  #   Export:
-  #     Name: MySqlDBName
-  # DBPassword:
-  #   Description: The password to the database on the MySql server
-  #   Value:
-  #     Ref: DBPassword
-  #   Export:
-  #     Name: MySqlDBPassword
-  # DBRootPassword:
-  #   Description: The root password of the database on the MySql server
-  #   Value:
-  #     Ref: DBRootPassword
-  #   Export:
-  #     Name: MySqlDBRootPassword
-  # MySqlServer:
-  #   Description: The ec2 instance id of the MySql server
-  #   Value:
-  #     Ref: MySqlServer
-  #   Export:
-  #     Name: MySqlServer
+  PublicIp:
+    Description: The IP address of the MySql server
+    Value:
+      Fn::GetAtt: [ MySqlServer, PublicIp ]
+      #Ref: PublicIp
+    Export:
+      Name: MySqlPublicIp
+  DBName:
+    Description: The name of the database on the MySql server
+    Value:
+      Ref: DBName
+    Export:
+      Name: MySqlDBName
+  DBUsername:
+    Description: The username of the user with access to the database on the MySql server
+    Value:
+      Ref: DBUsername
+    Export:
+      Name: MySqlDBUsername
+  DBPassword:
+    Description: The password to the database on the MySql server
+    Value:
+      Ref: DBPassword
+    Export:
+      Name: MySqlDBPassword
+  DBRootPassword:
+    Description: The root password of the database on the MySql server
+    Value:
+      Ref: DBRootPassword
+    Export:
+      Name: MySqlDBRootPassword
+  MySqlServer:
+    Description: The ec2 instance id of the MySql server
+    Value:
+      Ref: MySqlServer
+    Export:
+      Name: MySqlServer
   
 
 
