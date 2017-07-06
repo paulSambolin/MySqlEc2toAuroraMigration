@@ -3,6 +3,7 @@
 
 var AWS = require('aws-sdk');
 var mysql = require('mysql');
+var random_name = require('node-random-name');
 
 exports.handler = (event, context,callback) => {
     // keeps the lambda from timing out because mysql keeps the event loop open until con.end() is explicitly called
@@ -25,12 +26,24 @@ exports.handler = (event, context,callback) => {
         console.log("Connected!");
 
         // Send query
-        con.query('SHOW TABLES', function (err, result) {
-            if (err) throw err;
+        var user = {
+            name: random_name(),
+            title: 'janitor'
+        };
+        con.query('INSERT INTO user SET ?', user, function (err, result) {
+            if (err) {
+                callback(null, { statusCode: 404 });
+                throw err;
+            }
+
             console.log("Result: " + JSON.stringify(result));
 
             // Signal Success
-            callback(err, result);
+            const response = {
+                statusCode: 200,
+                body: JSON.stringify(result)
+            };
+            callback(err, response);
         });
     });
 }

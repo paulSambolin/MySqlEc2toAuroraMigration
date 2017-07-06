@@ -1,0 +1,15 @@
+{
+  "name": "insertuser",
+  "version": "0.0.1",
+  "description": "lambda function for inserting a user to the user table",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "mysql": "^2.13.0",
+    "node-random-name": "^1.0.1"
+  }
+}

@@ -478,7 +478,7 @@ Outputs:
   #   Export:
   #     Name:
   #       Fn::Join:
-  #       - ''
+  #       - '-'
   #       - - MySqlVPCId
   #         - Ref: AWS::StackName
   # PublicSubnet:
@@ -488,7 +488,7 @@ Outputs:
   #   Export:
   #     Name:
   #       Fn::Join:
-  #       - ''
+  #       - '-'
   #       - - MySqlPublicSubnetId
   #         - Ref: AWS::StackName
 
@@ -499,7 +499,7 @@ Outputs:
     Export:
       Name:
         Fn::Join:
-        - ''
+        - '-'
         - - MySqlSecurityGroup
           - Ref: AWS::StackName
   KeyPair:
@@ -509,7 +509,7 @@ Outputs:
     Export:
       Name:
         Fn::Join:
-        - ''
+        - '-'
         - - MySqlKeyPair
           - Ref: AWS::StackName
   PublicIp:
@@ -562,7 +562,7 @@ Outputs:
     Export:
       Name:
         Fn::Join:
-        - ''
+        - '-'
         - - MySqlDBRootPassword
           - Ref: AWS::StackName
   MySqlServer:
