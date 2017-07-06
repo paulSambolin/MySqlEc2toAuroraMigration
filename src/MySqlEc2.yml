@@ -437,9 +437,7 @@ Resources:
             - "yum install -y aws-cfn-bootstrap\n"
             - "# Install MySQL\n"
             - "yum install wget -y\n"
-            - "wget http://repo.mysql.com/mysql-community-release-el6-5.noarch.rpm\n"
-            - "rpm -ivh mysql-community-release-el6-5.noarch.rpm\n"
-            - "yum install mysql-server -y\n"
+            - "yum install mysql56-server -y\n"
 
             - "# Start the MySQL server"
             - "/etc/init.d/mysqld start\n"
