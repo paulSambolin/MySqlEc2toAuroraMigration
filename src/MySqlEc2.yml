@@ -214,6 +214,7 @@ Mappings:
 
 
 Resources:
+  # Commented out for testing
   # Setup VPC, Subnet and network configuration
   # VPC:
   #   Type: AWS::EC2::VPC
@@ -348,7 +349,7 @@ Resources:
       Roles:
       - Ref: RootRole
 
-  # Waits to set "CreateComplete" in Cloudformation until the EC2 server is fully setup and configured
+  # Waits to set "CreateComplete" status in Cloudformation until the EC2 server is fully setup and configured
   WaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
 
@@ -439,6 +440,8 @@ Resources:
             - "wget http://repo.mysql.com/mysql-community-release-el6-5.noarch.rpm\n"
             - "rpm -ivh mysql-community-release-el6-5.noarch.rpm\n"
             - "yum install mysql-server -y\n"
+
+            - "# Start the MySQL server"
             - "/etc/init.d/mysqld start\n"
 
             - "# Download setup script\n"
@@ -454,13 +457,19 @@ Resources:
             - "# Run the setup script\n"
             - "mysql -u root < /tmp/setup.mysql\n"
 
+            - "# Install percona xtra backup\n"
+            - "yum --enablerepo=epel install libev -y\n"
+            - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
+            - "yum install percona-xtrabackup-24\n"
+
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
             - " '"
             - Ref: WaitHandle
             - "'\n"
 
-Outputs:
+# Commented out for testing
+# Outputs:
   # Output network and db connection information to the console
   # VPC:
   #   Description: The VPC where the MySql server is located
@@ -480,42 +489,42 @@ Outputs:
   #     Ref: PublicIp
   #   Export:
   #     Name: MySqlPublicIp
-  SecurityGroup:
-    Description: The security group assigned to the MySql server
-    Value:
-      Ref: SecurityGroup
-    Export:
-      Name: MySqlSecurityGroup
-  KeyPair:
-    Description: The key pair securing ssh connections to the MySql server
-    Value:
-      Ref: KeyPair
-    Export:
-      Name: MySqlKeyPair
-  DBName:
-    Description: The name of the database on the MySql server
-    Value:
-      Ref: DBName
-    Export:
-      Name: MySqlDBName
-  DBPassword:
-    Description: The password to the database on the MySql server
-    Value:
-      Ref: DBPassword
-    Export:
-      Name: MySqlDBPassword
-  DBRootPassword:
-    Description: The root password of the database on the MySql server
-    Value:
-      Ref: DBRootPassword
-    Export:
-      Name: MySqlDBRootPassword
-  MySqlServer:
-    Description: The ec2 instance id of the MySql server
-    Value:
-      Ref: MySqlServer
-    Export:
-      Name: MySqlServer
+  # SecurityGroup:
+  #   Description: The security group assigned to the MySql server
+  #   Value:
+  #     Ref: SecurityGroup
+  #   Export:
+  #     Name: MySqlSecurityGroup
+  # KeyPair:
+  #   Description: The key pair securing ssh connections to the MySql server
+  #   Value:
+  #     Ref: KeyPair
+  #   Export:
+  #     Name: MySqlKeyPair
+  # DBName:
+  #   Description: The name of the database on the MySql server
+  #   Value:
+  #     Ref: DBName
+  #   Export:
+  #     Name: MySqlDBName
+  # DBPassword:
+  #   Description: The password to the database on the MySql server
+  #   Value:
+  #     Ref: DBPassword
+  #   Export:
+  #     Name: MySqlDBPassword
+  # DBRootPassword:
+  #   Description: The root password of the database on the MySql server
+  #   Value:
+  #     Ref: DBRootPassword
+  #   Export:
+  #     Name: MySqlDBRootPassword
+  # MySqlServer:
+  #   Description: The ec2 instance id of the MySql server
+  #   Value:
+  #     Ref: MySqlServer
+  #   Export:
+  #     Name: MySqlServer
   
 
 
