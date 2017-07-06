@@ -48,6 +48,7 @@ python/urllib3-1.12.dist-info/*
 
 *.zip
 *.pem
+.serverless
 
 # Mac OS Finder files
 .DS_Store

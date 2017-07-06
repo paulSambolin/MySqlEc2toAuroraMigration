@@ -1,0 +1,14 @@
+{
+  "name": "mysqlclient",
+  "version": "0.0.1",
+  "description": "lambda function connects to mysql",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "mysql": "^2.13.0"
+  }
+}
