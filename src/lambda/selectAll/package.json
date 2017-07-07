@@ -1,7 +1,7 @@
 {
-  "name": "runsqlscript",
+  "name": "selectall",
   "version": "0.0.1",
-  "description": "lambda function for running an sql script.  Script must be in S3",
+  "description": "lambda function for selecting from a mysql table",
   "main": "index.js",
   "scripts": {
     "test": "test"
@@ -9,5 +9,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "mysql": "^2.13.0"
   }
 }
