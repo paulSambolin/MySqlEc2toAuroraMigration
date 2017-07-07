@@ -50,18 +50,17 @@ function download() {
 function execute() {
     const exec = require('child_process').exec;
     return new Promise((resolve, reject) => {
-
-            // Connect to database and execute commands in .sql file
-            var script = './mysql/bin/mysql -h ' + process.env.HOST + ' -u ' + process.env.USERNAME + ' -p' + process.env.PASSWORD + ' ' + process.env.DATABASE + ' < ./execute.sql';
-            const child = exec(script, (err, stdout, stderr) => {
-                if(err) {
-                    console.log(err);
-                    reject();
-                }
-                console.log("sript executed successfully")
-                console.log(stdout);
-                console.log(stderr);
-                resolve();
-            });
+        // Connect to database and execute commands in .sql file
+        var script = './mysql/bin/mysql -h ' + process.env.HOST + ' -u ' + process.env.USERNAME + ' -p' + process.env.PASSWORD + ' ' + process.env.DATABASE + ' < ./execute.sql';
+        const child = exec(script, (err, stdout, stderr) => {
+            if(err) {
+                console.log(err);
+                reject();
+            }
+            console.log("sript executed successfully")
+            console.log(stdout);
+            console.log(stderr);
+            resolve();
         });
+    });
 }
