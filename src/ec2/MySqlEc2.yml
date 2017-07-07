@@ -437,6 +437,7 @@ Resources:
           Fn::Join:
           - ''
           - - "#!/bin/bash -xe\n"
+            - "yum update -y\n"
             - "yum install -y aws-cfn-bootstrap\n"
             - "# Install MySQL\n"
             - "yum install wget -y\n"
