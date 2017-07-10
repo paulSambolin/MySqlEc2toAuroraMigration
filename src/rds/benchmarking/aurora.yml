@@ -222,6 +222,7 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       Engine: aurora
+      PubliclyAccessible: true
       DBClusterIdentifier:
         Ref: DatabaseCluster
       DBInstanceClass:
@@ -235,6 +236,7 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       Engine: aurora
+      PubliclyAccessible: true
       DBClusterIdentifier:
         Ref: DatabaseCluster
       DBInstanceClass:
@@ -375,7 +377,7 @@ Resources:
 Outputs:
   # Export network and db connection information to sysbench instances
   VPC:
-    Description: The VPC where the MySql server is located
+    Description: The VPC where the aurora db cluster is located
     Value:
       Ref: VPC
     Export:
@@ -385,7 +387,7 @@ Outputs:
         - - VPC
           - benchmark
   PublicSubnet:
-    Description: The Subnet where the MySql server is located
+    Description: The Subnet where the aurora db cluster is located
     Value:
       Ref: PublicSubnet
     Export:
@@ -395,7 +397,7 @@ Outputs:
         - - Subnet
           - benchmark
   SecurityGroup:
-    Description: The security group assigned to the MySql server
+    Description: The security group assigned to the aurora db cluster
     Value:
       Ref: SecurityGroup
     Export:
@@ -405,7 +407,7 @@ Outputs:
         - - SecurityGroup
           - benchmark
   PublicIp:
-    Description: The IP address of the MySql server
+    Description: The IP address of the aurora db cluster
     Value:
       Fn::GetAtt: [ DatabaseCluster, Endpoint.Address ]
     Export:
@@ -415,7 +417,7 @@ Outputs:
         - - AuroraIp
           - benchmark
   DBName:
-    Description: The name of the database on the MySql server
+    Description: The name of the database on the aurora db cluster
     Value:
       Ref: DBName
     Export:
@@ -425,7 +427,7 @@ Outputs:
         - - DBName
           - benchmark
   DBUsername:
-    Description: The username of the user with access to the database on the MySql server
+    Description: The username of the user with access to the database on the aurora db cluster
     Value:
       Ref: DBUsername
     Export:
@@ -435,7 +437,7 @@ Outputs:
         - - DBUsername
           - benchmark
   DBPassword:
-    Description: The password to the database on the MySql server
+    Description: The password to the database on the aurora db cluster
     Value:
       Ref: DBPassword
     Export:

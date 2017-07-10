@@ -2,57 +2,51 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'sysbench benchmark tools on an EC2 instance in a vpc'
 
 Parameters:
-  VPC:
-    Type: String
-    Description: The VPC for launching sysbench instances
-    Default:
-    ConstraintDescription: Can contain only ASCII characters.
+  # VPC:
+  #   Type: String
+  #   Description: The VPC for launching sysbench instances
+  #   ConstraintDescription: Can contain only ASCII characters.
+  # Subnet:
+  #   Type: String
+  #   Description: The subnet where the aurora cluster is located
+  #   ConstraintDescription: Can contain only ASCII characters.
   KeyPair:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Default: MySqlServerKeyPair
     ConstraintDescription: Can contain only ASCII characters.
-  DBName:
-    Type: String
-    Description: MySQL database name
-    Default: ParivedaTestDB
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-    ConstraintDescription: Must begin with a letter and contain only alphanumeric
-      characters
-  DBUsername:
-    Type: String
-    Description: User name for MySQL database access
-    Default: ParivedaUser
-#    NoEcho: 'true'
-    MinLength: '1'
-    MaxLength: '16'
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-    ConstraintDescription: Must begin with a letter and contain only alphanumeric
-      characters
-  DBPassword:
-    Type: String
-    Description: Password for MySQL database access
-    Default: Pariveda1
-#    NoEcho: 'true'
-    MinLength: '1'
-    MaxLength: '41'
-    AllowedPattern: "[a-zA-Z0-9]*"
-    ConstraintDescription: Must contain only alphanumeric characters
-  DBRootPassword:
-    Type: String
-    Description: Root password for MySQL
-    Default: Pariveda1
-#    NoEcho: 'true'
-    MinLength: '1'
-    MaxLength: '41'
-    AllowedPattern: "[a-zA-Z0-9]*"
-    ConstraintDescription: Must contain only alphanumeric characters
+#   Endpoint:
+#     Type: String
+#     Description: The aurora db cluster endpoint
+#   DBName:
+#     Type: String
+#     Description: MySQL database name
+#     MinLength: '1'
+#     MaxLength: '64'
+#     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+#     ConstraintDescription: Must begin with a letter and contain only alphanumeric
+#       characters
+#   DBUsername:
+#     Type: String
+#     Description: User name for MySQL database access
+# #    NoEcho: 'true'
+#     MinLength: '1'
+#     MaxLength: '16'
+#     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+#     ConstraintDescription: Must begin with a letter and contain only alphanumeric
+#       characters
+#   DBPassword:
+#     Type: String
+#     Description: Password for MySQL database access
+# #    NoEcho: 'true'
+#     MinLength: '1'
+#     MaxLength: '41'
+#     AllowedPattern: "[a-zA-Z0-9]*"
+#     ConstraintDescription: Must contain only alphanumeric characters
   InstanceType:
     Type: String
     Description: WebServer EC2 instance type
-    Default: r3.8xlarge
+    Default: r3.large
     AllowedValues:
     - t1.micro
     - t2.micro
@@ -219,21 +213,6 @@ Mappings:
 
 
 Resources:
-
-
-  # PublicIp:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
-
-  # IPAssoc:
-  #   Type: AWS::EC2::EIPAssociation
-  #   Properties:
-  #     InstanceId:
-  #       Ref: SysbenchServer
-  #     EIP:
-  #       Ref: PublicIp
-
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -256,9 +235,12 @@ Resources:
         FromPort: '3306'
         ToPort: '3306'
         CidrIp: 0.0.0.0/0
-      # Un-comment for VPC
       VpcId:
-        Ref: VPC
+        Fn::ImportValue:
+          Fn::Join:
+          - '-'
+          - - VPC
+            - benchmark
       Tags:
       - Key: Application
         Value: MySqltoAurora
@@ -304,7 +286,20 @@ Resources:
         Ref: WaitHandle
       Timeout: '600'
 
-  # The MySQL server
+  PublicIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: SysbenchServer
+      EIP:
+        Ref: PublicIp
+
+  # The sysbench server
   SysbenchServer:
     Type: AWS::EC2::Instance
     Metadata:
@@ -319,19 +314,89 @@ Resources:
                 Fn::Join:
                 - ''
                 - - "#!/bin/bash\n"
+                  - "yum -y install mysql\n"
+                  - "mysql -h "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
+                  - " -u "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " -p"
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
+                  - " < setup.sql\n"
+                  - "cd /sysbench/sysbench\n"
                   - "./sysbench --test=tests/db/oltp.lua --mysql-host="
-                  # Uncomment for non-VPC
-                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
-                  # Uncomment for VPC
-                  # - Ref: PublicIp
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
                   - " --mysql-port=3306 --mysql-user="
-                  - Ref: DBUsername
-                  - " --mysqlpassword="
-                  - Ref: DBPassword
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
                   - " --mysql-db="
-                  - Ref: DBName
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
                   - " --mysql-table-engine=innodb --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql prepare\n"
-              mode: '000400'
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/setup.sql":
+              content:
+                Fn::Join:
+                - ''
+                - - "USE mysql;\n"
+                  - "DROP DATABASE IF EXISTS "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ";\n"
+                  - "CREATE DATABASE "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ";\n"
+                  - "GRANT ALL PRIVILEGES ON "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ".* TO ''"
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - "'@'%';\n"
+                  - "FLUSH PRIVILEGES;\n"
+              mode: '000755'
               owner: root
               group: root
             "/tmp/readTest.sh":
@@ -339,19 +404,33 @@ Resources:
                 Fn::Join:
                 - ''
                 - - "#!/bin/bash\n"
+                  - "cd /sysbench/sysbench\n"
                   - "./sysbench --test=tests/db/oltp.lua --mysql-host="
-                  # Uncomment for non-VPC
-                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
-                  # Uncomment for VPC
-                  # - Ref: PublicIp
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
                   - " --mysql-port=3306 --mysql-user="
-                  - Ref: DBUsername
-                  - " --mysqlpassword="
-                  - Ref: DBPassword
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
                   - " --mysql-db="
-                  - Ref: DBName
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
                   - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --max-time=600 --oltp-read-only=on --num-threads=500 run\n"
-              mode: '000400'
+              mode: '000755'
               owner: root
               group: root
             "/tmp/writeTest.sh":
@@ -359,19 +438,33 @@ Resources:
                 Fn::Join:
                 - ''
                 - - "#!/bin/bash\n"
+                  - "cd /sysbench/sysbench\n"
                   - "./sysbench --test=tests/db/oltp.lua --mysql-host="
-                  # Uncomment for non-VPC
-                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
-                  # Uncomment for VPC
-                  # - Ref: PublicIp
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
                   - " --mysql-port=3306 --mysql-user="
-                  - Ref: DBUsername
-                  - " --mysqlpassword="
-                  - Ref: DBPassword
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
                   - " --mysql-db="
-                  - Ref: DBName
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
                   - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --oltp-point-selects=0 --max-time=600 --num-threads=1000 --randtype=uniform run\n"          
-              mode: '000400'
+              mode: '000755'
               owner: root
               group: root
     Properties:
@@ -387,9 +480,12 @@ Resources:
         Ref: InstanceType
       SecurityGroupIds:
       - Ref: SecurityGroup
-      # Un-comment for VPC
-      # SubnetId:
-      #   Ref: PublicSubnet
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Join:
+          - '-'
+          - - Subnet
+            - benchmark
       Monitoring: 'true'
       IamInstanceProfile:
         Ref: RootRoleInstanceProfile
@@ -432,8 +528,8 @@ Resources:
             - Ref: AWS::Region
             - "\n"
 
-            - "# Setup the test db in aurora\n"
-            - "/tmp/setup.sh\n"
+            # - "# Setup the test db in aurora\n"
+            # - "/tmp/setup.sh\n"
 
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
@@ -452,28 +548,15 @@ Outputs:
         - '-'
         - - MySqlSecurityGroup
           - Ref: AWS::StackName
-  KeyPair:
-    Description: The key pair securing ssh connections to the sysbench server
-    Value:
-      Ref: KeyPair
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlKeyPair
-          - Ref: AWS::StackName
   PublicIp:
     Description: The IP address of the sysbench server
     Value:
-      # Uncomment for non-VPC
-      Fn::GetAtt: [ SysbenchServer, PublicIp ]
-      # Uncomment for VPC
-      #Ref: PublicIp
+      Ref: PublicIp
     Export:
       Name:
         Fn::Join:
         - '-'
-        - - MySqlPublicIp
+        - - SysbenchServerIp
           - Ref: AWS::StackName
   SysbenchServer:
     Description: The ec2 instance id of the sysbench server
