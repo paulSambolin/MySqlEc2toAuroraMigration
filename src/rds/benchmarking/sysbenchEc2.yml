@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'MySql on an EC2 instance in a vpc'
+Description: 'sysbench benchmark tools on an EC2 instance in a vpc'
 
 Parameters:
   VPC:
