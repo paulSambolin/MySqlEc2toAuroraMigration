@@ -440,6 +440,7 @@ Resources:
             - "yum update -y\n"
             - "yum install -y aws-cfn-bootstrap\n"
             - "# Install MySQL\n"
+            # remove wget from src/ec2/mysqlServer/MySqlEc2.yml
             - "yum install wget -y\n"
             - "yum install mysql56-server -y\n"
 

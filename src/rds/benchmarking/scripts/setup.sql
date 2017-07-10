@@ -1,0 +1,4 @@
+USE mysql;
+CREATE DATABASE ParivedaTestDB;
+GRANT ALL PRIVILEGES ON ParivedaTestDB.* TO 'ParivedaUser'@'%';
+FLUSH PRIVILEGES;

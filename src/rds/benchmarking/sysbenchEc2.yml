@@ -1,0 +1,538 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'sysbench benchmark tools on an EC2 instance in a vpc'
+
+Parameters:
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Default: MySqlServerKeyPair
+    ConstraintDescription: Can contain only ASCII characters.
+  InstanceType:
+    Type: String
+    Description: WebServer EC2 instance type
+    Default: r3.large
+    AllowedValues:
+    - t1.micro
+    - t2.micro
+    - t2.small
+    - t2.medium
+    - m1.small
+    - m1.medium
+    - m1.large
+    - m1.xlarge
+    - m2.xlarge
+    - m2.2xlarge
+    - m2.4xlarge
+    - m3.medium
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    - c1.medium
+    - c1.xlarge
+    - c3.large
+    - c3.xlarge
+    - c3.2xlarge
+    - c3.4xlarge
+    - c3.8xlarge
+    - g2.2xlarge
+    - r3.large
+    - r3.xlarge
+    - r3.2xlarge
+    - r3.4xlarge
+    - r3.8xlarge
+    - i2.xlarge
+    - i2.2xlarge
+    - i2.4xlarge
+    - i2.8xlarge
+    - hi1.4xlarge
+    - hs1.8xlarge
+    - cr1.8xlarge
+    - cc2.8xlarge
+    - cg1.4xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  SSHLocation:
+    Type: String
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Default: 0.0.0.0/0
+    MinLength: '9'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+Mappings:
+  AWSInstanceType2Arch:
+    t1.micro:
+      Arch: PV64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    m1.small:
+      Arch: PV64
+    m1.medium:
+      Arch: PV64
+    m1.large:
+      Arch: PV64
+    m1.xlarge:
+      Arch: PV64
+    m2.xlarge:
+      Arch: PV64
+    m2.2xlarge:
+      Arch: PV64
+    m2.4xlarge:
+      Arch: PV64
+    m3.medium:
+      Arch: HVM64
+    m3.large:
+      Arch: HVM64
+    m3.xlarge:
+      Arch: HVM64
+    m3.2xlarge:
+      Arch: HVM64
+    c1.medium:
+      Arch: PV64
+    c1.xlarge:
+      Arch: PV64
+    c3.large:
+      Arch: HVM64
+    c3.xlarge:
+      Arch: HVM64
+    c3.2xlarge:
+      Arch: HVM64
+    c3.4xlarge:
+      Arch: HVM64
+    c3.8xlarge:
+      Arch: HVM64
+    g2.2xlarge:
+      Arch: HVMG2
+    r3.large:
+      Arch: HVM64
+    r3.xlarge:
+      Arch: HVM64
+    r3.2xlarge:
+      Arch: HVM64
+    r3.4xlarge:
+      Arch: HVM64
+    r3.8xlarge:
+      Arch: HVM64
+    i2.xlarge:
+      Arch: HVM64
+    i2.2xlarge:
+      Arch: HVM64
+    i2.4xlarge:
+      Arch: HVM64
+    i2.8xlarge:
+      Arch: HVM64
+    hi1.4xlarge:
+      Arch: HVM64
+    hs1.8xlarge:
+      Arch: HVM64
+    cr1.8xlarge:
+      Arch: HVM64
+    cc2.8xlarge:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      PV64: ami-50842d38
+      HVM64: ami-08842d60
+      HVMG2: ami-3a329952
+    us-west-2:
+      PV64: ami-af86c69f
+      HVM64: ami-8786c6b7
+      HVMG2: ami-47296a77
+    us-west-1:
+      PV64: ami-c7a8a182
+      HVM64: ami-cfa8a18a
+      HVMG2: ami-331b1376
+    eu-west-1:
+      PV64: ami-aa8f28dd
+      HVM64: ami-748e2903
+      HVMG2: ami-00913777
+    ap-southeast-1:
+      PV64: ami-20e1c572
+      HVM64: ami-d6e1c584
+      HVMG2: ami-fabe9aa8
+    ap-northeast-1:
+      PV64: ami-21072820
+      HVM64: ami-35072834
+      HVMG2: ami-5dd1ff5c
+    ap-southeast-2:
+      PV64: ami-8b4724b1
+      HVM64: ami-fd4724c7
+      HVMG2: ami-e98ae9d3
+    sa-east-1:
+      PV64: ami-9d6cc680
+      HVM64: ami-956cc688
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      PV64: ami-a857c591
+      HVM64: ami-ac57c595
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      PV64: ami-a03503bd
+      HVM64: ami-b43503a9
+      HVMG2: ami-b03503ad
+
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, HTTPS, & SSH access to EC2 instance
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp:
+          Ref: SSHLocation
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '3306'
+        ToPort: '3306'
+        CidrIp: 0.0.0.0/0
+      VpcId:
+        Fn::ImportValue:
+          Fn::Join:
+          - '-'
+          - - VPC
+            - benchmark
+      Tags:
+      - Key: Application
+        Value: MySqltoAurora
+
+  # Role for the ec2 server
+  RootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+
+  RootRoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: RootRole
+
+  # Waits to set "CreateComplete" status in Cloudformation until the EC2 server is fully setup and configured
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Count: '1'
+      Handle:
+        Ref: WaitHandle
+      Timeout: '600'
+
+  PublicIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: SysbenchServer
+      EIP:
+        Ref: PublicIp
+
+  # The sysbench server
+  SysbenchServer:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          InstallAndRun:
+          - Install
+        Install:
+          files:
+            "/tmp/setup.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "yum -y install mysql\n"
+                  - "mysql -h "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
+                  - " -u "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " -p"
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
+                  - " < setup.sql\n"
+                  - "cd /sysbench/sysbench\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
+                  - " --mysql-port=3306 --mysql-user="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
+                  - " --mysql-db="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - " --mysql-table-engine=innodb --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql prepare\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/setup.sql":
+              content:
+                Fn::Join:
+                - ''
+                - - "USE mysql;\n"
+                  - "DROP DATABASE IF EXISTS "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ";\n"
+                  - "CREATE DATABASE "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ";\n"
+                  - "GRANT ALL PRIVILEGES ON "
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - ".* TO ''"
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - "'@'%';\n"
+                  - "FLUSH PRIVILEGES;\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/readTest.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "cd /sysbench/sysbench\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
+                  - " --mysql-port=3306 --mysql-user="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
+                  - " --mysql-db="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --max-time=600 --oltp-read-only=on --num-threads=500 run\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/writeTest.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "cd /sysbench/sysbench\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - AuroraIp
+                        - benchmark
+                  - " --mysql-port=3306 --mysql-user="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBUsername
+                        - benchmark
+                  - " --mysql-password="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBPassword
+                        - benchmark
+                  - " --mysql-db="
+                  - Fn::ImportValue:
+                      Fn::Join:
+                      - '-'
+                      - - DBName
+                        - benchmark
+                  - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --oltp-point-selects=0 --max-time=600 --num-threads=1000 --randtype=uniform run\n"          
+              mode: '000755'
+              owner: root
+              group: root
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      SecurityGroupIds:
+      - Ref: SecurityGroup
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Join:
+          - '-'
+          - - Subnet
+            - benchmark
+      Monitoring: 'true'
+      IamInstanceProfile:
+        Ref: RootRoleInstanceProfile
+      KeyName:
+        Ref: KeyPair
+      Tags:
+      - Key: Application
+        Value: MySqltoAurora
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update -y\n"
+            - "yum install -y aws-cfn-bootstrap\n"
+            - "# install sysbench\n"
+            - "yum -y install bzr\n"
+            - "yum -y install automake\n"
+            - "yum -y install libtool\n"
+            - "yum -y install mysql-devel\n"
+            - "bzr branch lp:sysbench\n"
+            - "cd sysbench\n"
+
+            - "# configure sysbench server to increase throughput\n"
+            - "./autogen.sh\n"
+            - "./configure\n"
+            - "make\n"
+            - "cd sysbench\n"
+            - "sh -c 'for x in /sys/class/net/eth0/queues/rx-*; do echo ffffffff > $x/rps_cpus; done'\n"
+            - "sh -c \"echo 32768 > /proc/sys/net/core/rps_sock_flow_entries\"\n"
+            - "sh -c \"echo 4096 > /sys/class/net/eth0/queues/rx-0/rps_flow_cnt\"\n"
+
+            - "# Download setup and testing scripts\n"
+            - "/opt/aws/bin/cfn-init -v "
+            - "         --stack "
+            - Ref: AWS::StackName
+            - "         --resource SysbenchServer "
+            - "         --configsets InstallAndRun "
+            - "         --region "
+            - Ref: AWS::Region
+            - "\n"
+
+            # - "# Setup the test db in aurora\n"
+            # - "/tmp/setup.sh\n"
+
+            - "# Signal the status from cfn-init\n"
+            - "/opt/aws/bin/cfn-signal -s true -e $? "
+            - " '"
+            - Ref: WaitHandle
+            - "'\n"
+
+Outputs:
+  SecurityGroup:
+    Description: The security group assigned to the sysbench server
+    Value:
+      Ref: SecurityGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - MySqlSecurityGroup
+          - Ref: AWS::StackName
+  PublicIp:
+    Description: The IP address of the sysbench server
+    Value:
+      Ref: PublicIp
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SysbenchServerIp
+          - Ref: AWS::StackName
+  SysbenchServer:
+    Description: The ec2 instance id of the sysbench server
+    Value:
+      Ref: SysbenchServer
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SysbenchServer
+          - Ref: AWS::StackName
+  
+
+
+
