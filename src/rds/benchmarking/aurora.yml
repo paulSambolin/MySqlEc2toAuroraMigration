@@ -129,17 +129,6 @@ Resources:
       - Key: Application
         Value: benchmark
 
-  # PublicSubnet3:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone: us-east-1c
-  #     VpcId:
-  #       Ref: VPC
-  #     CidrBlock: 10.0.3.0/24
-  #     Tags:
-  #     - Key: Application
-  #       Value: benchmark
-
   PublicSubnetRouteTableAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -155,14 +144,6 @@ Resources:
         Ref: PublicSubnet2
       RouteTableId:
         Ref: PublicRouteTable
-
-  # PublicSubnetRouteTableAssoc3:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId:
-  #       Ref: PublicSubnet3
-  #     RouteTableId:
-  #       Ref: PublicRouteTable
 
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -199,7 +180,6 @@ Resources:
       SubnetIds:
         - Ref: PublicSubnet
         - Ref: PublicSubnet2
-        # - Ref: PublicSubnet3
 
   DatabaseCluster:
     Type: AWS::RDS::DBCluster
