@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd /sysbench/sysbench
 ./sysbench --test=tests/db/oltp.lua \
     --mysql-host=$DBHOST \
     --oltp-tables-count=250 \
@@ -10,11 +10,12 @@
     --oltp-tablesize=25000 \
     --mysql-db=$DBNAME \
     --max-requests=0 \
+    --max-time=600 \
     --oltp_simple_ranges=0 \
     --oltp-distinct-ranges=0 \
     --oltp-sum-ranges=0 \
-    --oltp-order-ranges=0 \
-    --maxtime=600 \
-    --oltp-read-only=on \
-    --num-threads=500 run
-    
+    --oltporder-ranges=0 \
+    --oltp-point-selects=0 \
+    --num-threads=1000 \
+    --randtype=uniform \
+    run

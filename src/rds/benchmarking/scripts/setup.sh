@@ -2,7 +2,7 @@
 
 yum -y install mysql
 mysql -h $DBHOST -u $DBUSER -p$DBPASSWORD < setup.sql
-
+cd /sysbench/sysbench
 ./sysbench --test=tests/db/oltp.lua \
     --mysql-host=$DBHOST \
     --mysql-port=3306 \

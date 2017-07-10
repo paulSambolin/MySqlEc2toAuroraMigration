@@ -2,47 +2,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'sysbench benchmark tools on an EC2 instance in a vpc'
 
 Parameters:
-  # VPC:
-  #   Type: String
-  #   Description: The VPC for launching sysbench instances
-  #   ConstraintDescription: Can contain only ASCII characters.
-  # Subnet:
-  #   Type: String
-  #   Description: The subnet where the aurora cluster is located
-  #   ConstraintDescription: Can contain only ASCII characters.
   KeyPair:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Default: MySqlServerKeyPair
     ConstraintDescription: Can contain only ASCII characters.
-#   Endpoint:
-#     Type: String
-#     Description: The aurora db cluster endpoint
-#   DBName:
-#     Type: String
-#     Description: MySQL database name
-#     MinLength: '1'
-#     MaxLength: '64'
-#     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-#     ConstraintDescription: Must begin with a letter and contain only alphanumeric
-#       characters
-#   DBUsername:
-#     Type: String
-#     Description: User name for MySQL database access
-# #    NoEcho: 'true'
-#     MinLength: '1'
-#     MaxLength: '16'
-#     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-#     ConstraintDescription: Must begin with a letter and contain only alphanumeric
-#       characters
-#   DBPassword:
-#     Type: String
-#     Description: Password for MySQL database access
-# #    NoEcho: 'true'
-#     MinLength: '1'
-#     MaxLength: '41'
-#     AllowedPattern: "[a-zA-Z0-9]*"
-#     ConstraintDescription: Must contain only alphanumeric characters
   InstanceType:
     Type: String
     Description: WebServer EC2 instance type

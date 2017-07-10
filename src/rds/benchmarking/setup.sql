@@ -1,4 +1,0 @@
-USE mysql;
-CREATE DATABASE sbtest;
-GRANT ALL PRIVILEGES ON sbtest.* TO ParivedaUser@%;
-FLUSH PRIVILEGES;
