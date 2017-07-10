@@ -2,6 +2,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'MySql on an EC2 instance in a vpc'
 
 Parameters:
+  VPC:
+    Type: String
+    Description: The VPC for launching sysbench instances
+    Default:
+    ConstraintDescription: Can contain only ASCII characters.
   KeyPair:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
@@ -47,7 +52,7 @@ Parameters:
   InstanceType:
     Type: String
     Description: WebServer EC2 instance type
-    Default: m1.small
+    Default: r3.8xlarge
     AllowedValues:
     - t1.micro
     - t2.micro
@@ -214,70 +219,7 @@ Mappings:
 
 
 Resources:
-  # Un-comment for VPC
-  # Setup VPC, Subnet and network configuration
-  # VPC:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: 10.0.0.0/16
-  #     EnableDnsSupport: 'true'
-  #     EnableDnsHostnames: 'true'
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
 
-  # InternetGateway:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # InternetGatewayAttachment:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId:
-  #       Ref: VPC
-  #     InternetGatewayId:
-  #       Ref: InternetGateway
-
-  # PublicRouteTable:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId:
-  #       Ref: VPC
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # InternetEgressRoute:
-  #   Type: AWS::EC2::Route
-  #   DependsOn: InternetGatewayAttachment
-  #   Properties:
-  #     RouteTableId:
-  #       Ref: PublicRouteTable
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId:
-  #       Ref: InternetGateway
-
-  # PublicSubnet:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone: us-east-1b
-  #     VpcId:
-  #       Ref: VPC
-  #     CidrBlock: 10.0.1.0/24
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # PublicSubnetRouteTableAssoc:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId:
-  #       Ref: PublicSubnet
-  #     RouteTableId:
-  #       Ref: PublicRouteTable
 
   # PublicIp:
   #   Type: AWS::EC2::EIP
@@ -288,7 +230,7 @@ Resources:
   #   Type: AWS::EC2::EIPAssociation
   #   Properties:
   #     InstanceId:
-  #       Ref: MySqlServer
+  #       Ref: SysbenchServer
   #     EIP:
   #       Ref: PublicIp
 
@@ -315,8 +257,8 @@ Resources:
         ToPort: '3306'
         CidrIp: 0.0.0.0/0
       # Un-comment for VPC
-      # VpcId:
-      #   Ref: VPC
+      VpcId:
+        Ref: VPC
       Tags:
       - Key: Application
         Value: MySqltoAurora
@@ -363,7 +305,7 @@ Resources:
       Timeout: '600'
 
   # The MySQL server
-  MySqlServer:
+  SysbenchServer:
     Type: AWS::EC2::Instance
     Metadata:
       AWS::CloudFormation::Init:
@@ -372,39 +314,63 @@ Resources:
           - Install
         Install:
           files:
-            "/tmp/setup.mysql":
+            "/tmp/setup.sh":
               content:
                 Fn::Join:
                 - ''
-                - - "USE mysql;\n"
-                  - "UPDATE user SET password=PASSWORD(\""
-                  - Ref: DBRootPassword
-                  - "\") WHERE User='root';\n"
-                  - "FLUSH PRIVILEGES;\n"
-                  - "CREATE DATABASE "
-                  - Ref: DBName
-                  - ";\n"
-                  - "USE "
-                  - Ref: DBName
-                  - ";\n"
-                  - "CREATE TABLE user (name VARCHAR(20), title VARCHAR(20));\n"
-                  - "CREATE USER '"
+                - - "#!/bin/bash\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  # Uncomment for non-VPC
+                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
+                  # Uncomment for VPC
+                  # - Ref: PublicIp
+                  - " --mysql-port=3306 --mysql-user="
                   - Ref: DBUsername
-                  - "'@'localhost' IDENTIFIED BY '"
+                  - " --mysqlpassword="
                   - Ref: DBPassword
-                  - "';\n"
-                  - "GRANT ALL PRIVILEGES ON *.* TO '"
+                  - " --mysql-db="
+                  - Ref: DBName
+                  - " --mysql-table-engine=innodb --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql prepare\n"
+              mode: '000400'
+              owner: root
+              group: root
+            "/tmp/readTest.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  # Uncomment for non-VPC
+                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
+                  # Uncomment for VPC
+                  # - Ref: PublicIp
+                  - " --mysql-port=3306 --mysql-user="
                   - Ref: DBUsername
-                  - "'@'localhost' WITH GRANT OPTION;\n"
-                  - "CREATE USER '"
-                  - Ref: DBUsername
-                  - "'@'%' IDENTIFIED BY '"
+                  - " --mysqlpassword="
                   - Ref: DBPassword
-                  - "';\n"
-                  - "GRANT ALL PRIVILEGES ON *.* TO '"
+                  - " --mysql-db="
+                  - Ref: DBName
+                  - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --max-time=600 --oltp-read-only=on --num-threads=500 run\n"
+              mode: '000400'
+              owner: root
+              group: root
+            "/tmp/writeTest.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "./sysbench --test=tests/db/oltp.lua --mysql-host="
+                  # Uncomment for non-VPC
+                  - Fn::GetAtt: [ SysbenchServer, PublicIp ]
+                  # Uncomment for VPC
+                  # - Ref: PublicIp
+                  - " --mysql-port=3306 --mysql-user="
                   - Ref: DBUsername
-                  - "'@'%' WITH GRANT OPTION;\n"
-                  - "FLUSH PRIVILEGES;\n"
+                  - " --mysqlpassword="
+                  - Ref: DBPassword
+                  - " --mysql-db="
+                  - Ref: DBName
+                  - " --oltp-table-size=25000 --oltp-tables-count=250 --db-driver=mysql --max-requests=0 --oltp_simple_ranges=0 --oltp-distinct-ranges=0 --oltp-sum-ranges=0 --oltp-order-ranges=0 --oltp-point-selects=0 --max-time=600 --num-threads=1000 --randtype=uniform run\n"          
               mode: '000400'
               owner: root
               group: root
@@ -439,31 +405,35 @@ Resources:
           - - "#!/bin/bash -xe\n"
             - "yum update -y\n"
             - "yum install -y aws-cfn-bootstrap\n"
-            - "# Install MySQL\n"
-            - "yum install wget -y\n"
-            - "yum install mysql56-server -y\n"
+            - "# install sysbench\n"
+            - "yum -y install bzr\n"
+            - "yum -y install automake\n"
+            - "yum -y install libtool\n"
+            - "yum -y install mysql-devel\n"
+            - "bzr branch lp:sysbench\n"
+            - "cd sysbench\n"
 
-            - "# Start the MySQL server\n"
-            - "/etc/init.d/mysqld start\n"
+            - "# configure sysbench server to increase throughput\n"
+            - "./autogen.sh\n"
+            - "./configure\n"
+            - "make\n"
+            - "cd sysbench\n"
+            - "sh -c 'for x in /sys/class/net/eth0/queues/rx-*; do echo ffffffff > $x/rps_cpus; done'\n"
+            - "sh -c \"echo 32768 > /proc/sys/net/core/rps_sock_flow_entries\"\n"
+            - "sh -c \"echo 4096 > /sys/class/net/eth0/queues/rx-0/rps_flow_cnt\"\n"
 
-            - "# Download setup script\n"
+            - "# Download setup and testing scripts\n"
             - "/opt/aws/bin/cfn-init -v "
             - "         --stack "
             - Ref: AWS::StackName
-            - "         --resource MySqlServer "
+            - "         --resource SysbenchServer "
             - "         --configsets InstallAndRun "
             - "         --region "
             - Ref: AWS::Region
             - "\n"
 
-            - "# Run the setup script\n"
-            - "mysql -u root < /tmp/setup.mysql\n"
-
-            - "# Install percona xtra backup\n"
-            - "yum --enablerepo=epel install libev -y\n"
-            - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
-            - "yum install percona-xtrabackup-24 -y\n"
-
+            - "# Setup the test db in aurora\n"
+            - "/tmp/setup.sh\n"
 
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
@@ -472,31 +442,8 @@ Resources:
             - "'\n"
 
 Outputs:
-  # Uncomment for VPC
-  # Output network and db connection information to the console
-  # VPC:
-  #   Description: The VPC where the MySql server is located
-  #   Value:
-  #     Ref: VPC
-  #   Export:
-  #     Name:
-  #       Fn::Join:
-  #       - '-'
-  #       - - MySqlVPCId
-  #         - Ref: AWS::StackName
-  # PublicSubnet:
-  #   Description: The Subnet where the MySql server is located
-  #   Value:
-  #     Ref: PublicSubnet
-  #   Export:
-  #     Name:
-  #       Fn::Join:
-  #       - '-'
-  #       - - MySqlPublicSubnetId
-  #         - Ref: AWS::StackName
-
   SecurityGroup:
-    Description: The security group assigned to the MySql server
+    Description: The security group assigned to the sysbench server
     Value:
       Ref: SecurityGroup
     Export:
@@ -506,7 +453,7 @@ Outputs:
         - - MySqlSecurityGroup
           - Ref: AWS::StackName
   KeyPair:
-    Description: The key pair securing ssh connections to the MySql server
+    Description: The key pair securing ssh connections to the sysbench server
     Value:
       Ref: KeyPair
     Export:
@@ -516,10 +463,10 @@ Outputs:
         - - MySqlKeyPair
           - Ref: AWS::StackName
   PublicIp:
-    Description: The IP address of the MySql server
+    Description: The IP address of the sysbench server
     Value:
       # Uncomment for non-VPC
-      Fn::GetAtt: [ MySqlServer, PublicIp ]
+      Fn::GetAtt: [ SysbenchServer, PublicIp ]
       # Uncomment for VPC
       #Ref: PublicIp
     Export:
@@ -528,55 +475,15 @@ Outputs:
         - '-'
         - - MySqlPublicIp
           - Ref: AWS::StackName
-  DBName:
-    Description: The name of the database on the MySql server
+  SysbenchServer:
+    Description: The ec2 instance id of the sysbench server
     Value:
-      Ref: DBName
+      Ref: SysbenchServer
     Export:
       Name:
         Fn::Join:
         - '-'
-        - - MySqlDBName
-          - Ref: AWS::StackName
-  DBUsername:
-    Description: The username of the user with access to the database on the MySql server
-    Value:
-      Ref: DBUsername
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlDBUsername
-          - Ref: AWS::StackName
-  DBPassword:
-    Description: The password to the database on the MySql server
-    Value:
-      Ref: DBPassword
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlDBPassword
-          - Ref: AWS::StackName
-  DBRootPassword:
-    Description: The root password of the database on the MySql server
-    Value:
-      Ref: DBRootPassword
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlDBRootPassword
-          - Ref: AWS::StackName
-  MySqlServer:
-    Description: The ec2 instance id of the MySql server
-    Value:
-      Ref: MySqlServer
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlServer
+        - - SysbenchServer
           - Ref: AWS::StackName
   
 

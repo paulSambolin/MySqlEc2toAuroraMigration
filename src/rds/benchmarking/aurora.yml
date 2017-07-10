@@ -1,0 +1,446 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: A basic CloudFormation template for an RDS Aurora cluster.
+Parameters:
+  InstanceType:
+    Default: db.r3.large
+    AllowedValues:
+      - db.r3.large
+      - db.r3.xlarge
+      - db.r3.2xlarge
+      - db.r3.4xlarge
+      - db.r3.8xlarge
+    Description: The instance type to use for the database.
+    Type: String
+
+  DBAZ:
+    Type: String
+    Description: The primary availability zone 
+    Default: us-east-1b
+    AllowedValues:
+      - us-east-1b
+      - us-east-1c
+      - us-east-1e
+
+  DBName:
+    Type: String
+    Description: MySQL database name
+    Default: ParivedaTestDB
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric
+      characters
+
+  DBPassword:
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: must contain only alphanumeric characters.
+    Description: The database admin account password.
+    MaxLength: '41'
+    MinLength: '8'
+    Default: Pariveda1
+#    NoEcho: 'true'
+    Type: String
+
+  DBUsername:
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: must contain only alphanumeric characters.
+    Description: The database admin account user name.
+    Default: ParivedaUser
+    MaxLength: '16'
+    MinLength: '1'
+    Type: String
+
+  DatabaseBackupRetentionPeriod:
+    Type: String
+    Default: 7
+    AllowedValues:
+        - 1
+        - 7
+    Description: The database backup retention period in days.
+
+Resources:
+  # NOTE: sysbench instances should be in the same vpc as the aurora instance
+  # Setup VPC, Subnet and network configuration
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+      - Key: Application
+        Value: benchmark
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Application
+        Value: benchmark
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Application
+        Value: benchmark
+
+  InternetEgressRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Ref: DBAZ
+      VpcId:
+        Ref: VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+      - Key: Application
+        Value: benchmark
+  
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1c
+      VpcId:
+        Ref: VPC
+      CidrBlock: 10.0.2.0/24
+      Tags:
+      - Key: Application
+        Value: benchmark
+
+  # PublicSubnet3:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone: us-east-1c
+  #     VpcId:
+  #       Ref: VPC
+  #     CidrBlock: 10.0.3.0/24
+  #     Tags:
+  #     - Key: Application
+  #       Value: benchmark
+
+  PublicSubnetRouteTableAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PublicSubnetRouteTableAssoc2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet2
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  # PublicSubnetRouteTableAssoc3:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId:
+  #       Ref: PublicSubnet3
+  #     RouteTableId:
+  #       Ref: PublicRouteTable
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, HTTPS, & SSH access to Aurora instance
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '3306'
+        ToPort: '3306'
+        CidrIp: 0.0.0.0/0
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Application
+        Value: benchmark
+
+    # Set up aurora cluster
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds:
+        - Ref: PublicSubnet
+        - Ref: PublicSubnet2
+        # - Ref: PublicSubnet3
+
+  DatabaseCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora
+      MasterUsername:
+        Ref: DBUsername
+      MasterUserPassword:
+        Ref: DBPassword
+      BackupRetentionPeriod:
+        Ref: DatabaseBackupRetentionPeriod
+      PreferredBackupWindow: 02:00-03:00
+      PreferredMaintenanceWindow: mon:03:00-mon:04:00
+      DBSubnetGroupName:
+        Ref: DatabaseSubnetGroup
+      VpcSecurityGroupIds:
+        - Ref: SecurityGroup
+
+  DatabasePrimaryInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora
+      DBClusterIdentifier:
+        Ref: DatabaseCluster
+      DBInstanceClass:
+        Ref: InstanceType
+      DBSubnetGroupName:
+        Ref: DatabaseSubnetGroup
+      AvailabilityZone:
+        Ref: DBAZ
+
+  DatabaseReplicaInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora
+      DBClusterIdentifier:
+        Ref: DatabaseCluster
+      DBInstanceClass:
+        Ref: InstanceType
+      DBSubnetGroupName:
+        Ref: DatabaseSubnetGroup
+      AvailabilityZone:
+        Ref: DBAZ
+
+    # Setup cloudwatch alarms
+  StackAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Stack Alarm Topic
+
+  DatabasePrimaryCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Primary database CPU utilization is over 80%.
+      Namespace: AWS/RDS
+      MetricName: CPUUtilization
+      Unit: Percent
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabasePrimaryInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+      InsufficientDataActions:
+        - Ref: StackAlarmTopic
+
+  DatabaseReplicaCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Replica database CPU utilization is over 80%.
+      Namespace: AWS/RDS
+      MetricName: CPUUtilization
+      Unit: Percent
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabaseReplicaInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+      InsufficientDataActions:
+        - Ref: StackAlarmTopic
+
+  DatabasePrimaryMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Primary database freeable memory is under 700MB.
+      Namespace: AWS/RDS
+      MetricName: FreeableMemory
+      Unit: Bytes
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 700000000
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabasePrimaryInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+      InsufficientDataActions:
+        - Ref: StackAlarmTopic
+
+  DatabaseReplicaMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Replica database freeable memory is under 700MB.
+      Namespace: AWS/RDS
+      MetricName: FreeableMemory
+      Unit: Bytes
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 700000000
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabaseReplicaInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+      InsufficientDataActions:
+        - Ref: StackAlarmTopic
+
+  DatabasePrimaryReplicationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database replication latency is over 200ms.
+      Namespace: AWS/RDS
+      MetricName: AuroraReplicaLag
+      Unit: Milliseconds
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 200
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabaseReplicaInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+
+  DatabaseReplicaReplicationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Database replication latency is over 200ms.
+      Namespace: AWS/RDS
+      MetricName: AuroraReplicaLag
+      Unit: Milliseconds
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 200
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value:
+            Ref: DatabaseReplicaInstance
+      AlarmActions:
+        - Ref: StackAlarmTopic
+
+Outputs:
+  # Export network and db connection information to sysbench instances
+  VPC:
+    Description: The VPC where the MySql server is located
+    Value:
+      Ref: VPC
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - VPC
+          - benchmark
+  PublicSubnet:
+    Description: The Subnet where the MySql server is located
+    Value:
+      Ref: PublicSubnet
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - Subnet
+          - benchmark
+  SecurityGroup:
+    Description: The security group assigned to the MySql server
+    Value:
+      Ref: SecurityGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SecurityGroup
+          - benchmark
+  PublicIp:
+    Description: The IP address of the MySql server
+    Value:
+      Fn::GetAtt: [ DatabaseCluster, Endpoint.Address ]
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - AuroraIp
+          - benchmark
+  DBName:
+    Description: The name of the database on the MySql server
+    Value:
+      Ref: DBName
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBName
+          - benchmark
+  DBUsername:
+    Description: The username of the user with access to the database on the MySql server
+    Value:
+      Ref: DBUsername
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBUsername
+          - benchmark
+  DBPassword:
+    Description: The password to the database on the MySql server
+    Value:
+      Ref: DBPassword
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBPassword
+          - benchmark
