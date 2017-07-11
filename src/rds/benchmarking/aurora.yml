@@ -114,6 +114,7 @@ Resources:
       VpcId:
         Ref: VPC
       CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
       Tags:
       - Key: Application
         Value: benchmark
@@ -375,6 +376,16 @@ Outputs:
         Fn::Join:
         - '-'
         - - Subnet
+          - benchmark
+  PublicSubnet2:
+    Description: The Subnet where the aurora db cluster is located
+    Value:
+      Ref: PublicSubnet2
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - Subnet2
           - benchmark
   SecurityGroup:
     Description: The security group assigned to the aurora db cluster

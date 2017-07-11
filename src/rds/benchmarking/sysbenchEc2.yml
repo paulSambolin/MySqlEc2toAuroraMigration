@@ -250,18 +250,18 @@ Resources:
         Ref: WaitHandle
       Timeout: '600'
 
-  PublicIp:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
+  # PublicIp:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
 
-  IPAssoc:
-    Type: AWS::EC2::EIPAssociation
-    Properties:
-      InstanceId:
-        Ref: SysbenchServer
-      EIP:
-        Ref: PublicIp
+  # IPAssoc:
+  #   Type: AWS::EC2::EIPAssociation
+  #   Properties:
+  #     InstanceId:
+  #       Ref: SysbenchServer
+  #     EIP:
+  #       Ref: PublicIp
 
   # The sysbench server
   SysbenchServer:
@@ -352,7 +352,7 @@ Resources:
                       - '-'
                       - - DBName
                         - benchmark
-                  - ".* TO ''"
+                  - ".* TO '"
                   - Fn::ImportValue:
                       Fn::Join:
                       - '-'
@@ -515,7 +515,10 @@ Outputs:
   PublicIp:
     Description: The IP address of the sysbench server
     Value:
-      Ref: PublicIp
+      Fn::GetAtt:
+        - SysbenchServer
+        - PublicIp
+      # Ref: PublicIp
     Export:
       Name:
         Fn::Join:
