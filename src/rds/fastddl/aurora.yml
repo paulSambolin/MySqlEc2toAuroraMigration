@@ -186,14 +186,14 @@ Resources:
       SubnetIds:
         - Ref: PublicSubnet
         - Ref: PublicSubnet2
-  
-  DatabaseParameterGroup:
-    Type: AWS::RDS::DBParameterGroup
-    Properties: 
-      Description: Aurora Lab Mode Parameter Group
-      Family: Aurora5.6
-      Parameters:
-        aurora_lab_mode: 1
+
+  DatabaseClusterParameterGroup:
+      Type: AWS::RDS::DBClusterParameterGroup
+      Properties: 
+        Description: Aurora Cluster Parameter Group
+        Family: Aurora5.6
+        Parameters:
+          binlog_format: ROW
 
   DatabaseCluster:
     Type: AWS::RDS::DBCluster
@@ -209,8 +209,19 @@ Resources:
       PreferredMaintenanceWindow: mon:03:00-mon:04:00
       DBSubnetGroupName:
         Ref: DatabaseSubnetGroup
+      DBClusterParameterGroupName:
+        Ref: DatabaseClusterParameterGroup
       VpcSecurityGroupIds:
         - Ref: SecurityGroup
+
+  DatabaseParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties: 
+      Description: Aurora Parameter Group
+      Family: Aurora5.6
+      Parameters:
+        aurora_lab_mode: 1  # need to enable lab mode for fastdll
+        log_bin_trust_function_creators: 1
 
   DatabasePrimaryInstance:
     Type: AWS::RDS::DBInstance
