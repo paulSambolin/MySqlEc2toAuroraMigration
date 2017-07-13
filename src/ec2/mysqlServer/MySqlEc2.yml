@@ -360,7 +360,7 @@ Resources:
       Count: '1'
       Handle:
         Ref: WaitHandle
-      Timeout: '600'
+      Timeout: '1000'
 
   # The MySQL server
   MySqlServer:
