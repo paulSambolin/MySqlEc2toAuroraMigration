@@ -457,6 +457,47 @@ Resources:
               mode: '000755'
               owner: root
               group: root
+            "/tmp/backup.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "# Update mysql user group permissons\n"
+                  - "chown -R mysql: /var/lib/mysql\n"
+                  - "find /var/lib/mysql -type d -exec chmod 775 \"{}\" \\;\n"
+                  - "# Create the backup\n"
+                  - "xtrabackup --backup --user=$DBUsername --password=$DBPassword --no-timestamp --target-dir=/data/backups\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/prepare.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "# Prepare the backup for restoration\n"
+                  - "xtrabackup --prepare --target-dir=/data/backups\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/restore.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "# Stop mysqld\n"
+                  - "service mysqld stop\n"
+                  - "# Delete the datadir\n"
+                  - "rm -rf /var/lib/mysql\n"
+                  - "# Start the restoration\n"
+                  - "xtrabackup --copy-back --target-dir=/data/backups\n"
+                  - "# Update the permissions of the datadir\n"
+                  - "chown -R mysql:mysql /var/lib/mysql\n"
+                  - "# Start mysqld\n"
+                  - "service mysqld start\n"
+              mode: '000755'
+              owner: root
+              group: root
         Configure:
           commands:
             01_start_mysqld:
@@ -508,6 +549,12 @@ Resources:
                   - " --password='"
                   - Ref: DBRootPassword
                   - "' < /tmp/generateData.sql"
+            09_add_user_to_mysql_group:
+              command: gpasswd -a ec2-user mysql
+            011_make_backup_directory:
+              command: mkdir -p /data/backups
+            012_update_backup_directory_permissions:
+              command: "chown -R ec2-user: /data"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -554,6 +601,14 @@ Resources:
             - "yum --enablerepo=epel install libev -y\n"
             - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
             - "yum install percona-xtrabackup-24 -y\n"
+
+            - "# Export database credentials to environment vairables\n"
+            - "echo DBUsername="
+            - Ref: DBUsername
+            - " >>/etc/environment \n"
+            - "echo DBPassword="
+            - Ref: DBPassword
+            - " >>/etc/environment \n"
 
             - "# Signal the status from cfn-init\n"
             - "/opt/aws/bin/cfn-signal -s true -e $? "
