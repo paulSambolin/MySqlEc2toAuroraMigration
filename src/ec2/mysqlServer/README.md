@@ -30,4 +30,14 @@
 - Connect to remote mysql db
 `./connect -h 52.87.93.24`
 
+### Upload to s3
+- Zip the backup or create a large file to test the upload to s3
+`zip -r backup.zip /data/backups`
+OR
+`fallocate -l 6G backup.zip`
+
+- Start the multipart upload
+`s3cmd put <file> s3://<bucket>/<key> --verbose`
+
+- In order to increase upload speeds to s3, enhance the multipart upload with parallel threads (needs scripting)
 

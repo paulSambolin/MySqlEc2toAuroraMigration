@@ -602,6 +602,10 @@ Resources:
             - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
             - "yum install percona-xtrabackup-24 -y\n"
 
+            - "# Install s3cmd\n"
+            - "sudo yum --enablerepo=epel install s3cmd\n"
+            - 'echo -e "\n\nus-east-1\n\n\n\nn\ny\n" | s3cmd --configure\n'
+
             - "# Export database credentials to environment vairables\n"
             - "echo DBUsername="
             - Ref: DBUsername
