@@ -466,7 +466,7 @@ Resources:
                   - "chown -R mysql: /var/lib/mysql\n"
                   - "find /var/lib/mysql -type d -exec chmod 775 \"{}\" \\;\n"
                   - "# Create the backup\n"
-                  - "xtrabackup --backup --user=$DBUsername --password=$DBPassword --no-timestamp --target-dir=/data/backups\n"
+                  - "xtrabackup --backup --user=$DBUsername --password=$DBPassword --no-timestamp --target-dir=/data/backups  --stream=tar | gzip - | split -d --bytes=512000 - /data/backups/backup.tar.gz\n"
               mode: '000755'
               owner: root
               group: root
@@ -495,6 +495,21 @@ Resources:
                   - "chown -R mysql:mysql /var/lib/mysql\n"
                   - "# Start mysqld\n"
                   - "service mysqld start\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/upload.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "while [[ $# -gt 0 ]]; do\n"
+                  - "  case \"$1\" in --bucket|-b) BUCKET=$2 shift ;; --key|-k) KEY=$2 shift ;; *) echo \"Invalid argument: $1\" exit 1; esac\n"
+                  - "  shift\n"
+                  - "done\n"
+                  - "if [ -z \"$BUCKET\" ]; then BUCKET=\"123testtestbucket\"; fi\n"
+                  - "if [ -z \"$KEY\" ]; then KEY=\"backups\"; fi\n"
+                  - "for filename in /data/backups/*.tar.gz; do s3cmd put \"$filename\" s3://$BUCKET/$KEY/\"$filename\" --verbose; done\n"
               mode: '000755'
               owner: root
               group: root
@@ -603,8 +618,8 @@ Resources:
             - "yum install percona-xtrabackup-24 -y\n"
 
             - "# Install s3cmd\n"
-            - "sudo yum --enablerepo=epel install s3cmd\n"
-            - 'echo -e "\n\nus-east-1\n\n\n\nn\ny\n" | s3cmd --configure\n'
+            - "sudo yum -y --enablerepo=epel install s3cmd\n"
+            - "echo -e \"\\n\\nus-east-1\\n\\n\\n\\nn\\ny\\n\" | s3cmd --configure\n"
 
             - "# Export database credentials to environment vairables\n"
             - "echo DBUsername="
