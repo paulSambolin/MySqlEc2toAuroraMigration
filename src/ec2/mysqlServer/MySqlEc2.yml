@@ -318,8 +318,8 @@ Resources:
       # VpcId:
       #   Ref: VPC
       Tags:
-      - Key: Application
-        Value: MySqltoAurora
+      - Key: Pariveda
+        Value: true
 
   # Role for the ec2 server
   RootRole:
@@ -577,8 +577,8 @@ Resources:
       KeyName:
         Ref: KeyPair
       Tags:
-      - Key: Application
-        Value: MySqltoAurora
+      - Key: Pariveda
+        Value: true
       UserData:
         Fn::Base64:
           Fn::Join:
