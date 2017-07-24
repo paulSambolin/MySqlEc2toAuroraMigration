@@ -1,0 +1,21 @@
+
+Type: "AWS::IAM::Policy"
+Properties: 
+  PolicyName: "EC2-Policy"
+  PolicyDocument: 
+    Version: "2012-10-17"
+    Statement:
+      # Grant List Bucket on a single s3 Bucket
+      - Effect: "Allow"
+        Action: 
+          - "s3:ListBucket"
+        Resource: "arn:aws:s3:::pariveda-venmo-aurora" # TODO: Update bucket name
+      # Grant Get Object on all objects in the bucket
+      - Effect: "Allow"
+        Action: 
+          - "s3:Get*"
+          - "s3:Put*"
+        Resource: "arn:aws:s3:::pariveda-venmo-aurora/*" # TODO: Update bucket name
+
+# the security group assigned to the ec2 instance must allow access to port 3306 for the mysql cli and port 22 for ssh from an authorized ip. Preferably venmo's entire ip range
+

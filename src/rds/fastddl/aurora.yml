@@ -69,17 +69,15 @@ Resources:
       EnableDnsSupport: 'true'
       EnableDnsHostnames: 'true'
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -95,9 +93,8 @@ Resources:
       VpcId:
         Ref: VPC
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
 
   InternetEgressRoute:
     Type: AWS::EC2::Route
@@ -118,9 +115,8 @@ Resources:
         Ref: VPC
       CidrBlock: 10.0.1.0/24
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
   
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -130,9 +126,8 @@ Resources:
         Ref: VPC
       CidrBlock: 10.0.2.0/24
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
 
   PublicSubnetRouteTableAssoc:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -174,9 +169,8 @@ Resources:
       VpcId:
         Ref: VPC
       Tags:
-      - Key: Application
-        Value:
-          Ref: AWS::StackName
+      - Key: Pariveda
+        Value: true
 
   # Set up aurora cluster
   DatabaseSubnetGroup:
@@ -186,14 +180,21 @@ Resources:
       SubnetIds:
         - Ref: PublicSubnet
         - Ref: PublicSubnet2
+      Tags:
+      - Key: Pariveda
+        Value: true
 
   DatabaseClusterParameterGroup:
-      Type: AWS::RDS::DBClusterParameterGroup
-      Properties: 
-        Description: Aurora Cluster Parameter Group
-        Family: Aurora5.6
-        Parameters:
-          binlog_format: ROW
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties: 
+      Description: Aurora Cluster Parameter Group
+      Family: Aurora5.6
+      Parameters:
+        binlog_format: ROW
+      Tags:
+      - Key: Pariveda
+        Value: true
+        
 
   DatabaseCluster:
     Type: AWS::RDS::DBCluster
@@ -213,6 +214,9 @@ Resources:
         Ref: DatabaseClusterParameterGroup
       VpcSecurityGroupIds:
         - Ref: SecurityGroup
+      Tags:
+      - Key: Pariveda
+        Value: true
 
   DatabaseParameterGroup:
     Type: AWS::RDS::DBParameterGroup
@@ -222,6 +226,9 @@ Resources:
       Parameters:
         aurora_lab_mode: 1  # need to enable lab mode for fastdll
         log_bin_trust_function_creators: 1
+      Tags:
+      - Key: Pariveda
+        Value: true
 
   DatabasePrimaryInstance:
     Type: AWS::RDS::DBInstance
@@ -238,6 +245,9 @@ Resources:
         Ref: DatabaseParameterGroup
       AvailabilityZone:
         Ref: DBAZ
+      Tags:
+      - Key: Pariveda
+        Value: true
 
   DatabaseReplicaInstance:
     Type: AWS::RDS::DBInstance
@@ -254,6 +264,9 @@ Resources:
         Ref: DatabaseParameterGroup
       AvailabilityZone:
         Ref: DBAZ
+      Tags:
+      - Key: Pariveda
+        Value: true
 
     # Setup cloudwatch alarms
   StackAlarmTopic:

@@ -1,0 +1,185 @@
+
+
+Type: "AWS::IAM::Policy"
+Properties: 
+  PolicyName: "Pariveda-User-Policy"
+  PolicyDocument: 
+    Version: "2012-10-17"
+    Statement:
+      # Grant access to a single bucket (bucket needs to exist)
+      - Effect: "Allow"
+        Action: 
+          - "s3:*"
+        Resource: "arn:aws:s3:::pariveda-venmo-aurora"  # TODO: Update bucket name
+      - Effect: "Allow"
+        Action:
+          - "s3:*"
+        Resource: "arn:aws:s3:::pariveda-venmo-aurora/*"  # TODO: Update bucket name
+      
+      # Grant create and read access to rds resources
+      - Effect: Allow
+        Action:
+          - "rds:Create*"
+          - "rds:Describe*"
+          - "rds:List*"
+          - "rds:Add*"
+        Resource: "*"
+
+      # Grant access to all rds resources with the tag key="Pariveda", value="true"
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:db-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:og-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:pg-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:secgrp-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:snapshot-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:subgrp-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:es-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:cluster-pg-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:cluster-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:cluster-snapshot-tag/Pariveda: true
+      - Effect: Allow
+        Action:
+          - "rds:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            rds:ri-tag/Pariveda: true
+
+      # Grant access to all ec2 instances tagged with the tag key="Pariveda", value="true"
+      - Effect: Allow
+        Action:
+          - "ec2:*"
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            ec2:ResourceTag/Pariveda: true
+
+      # Grant read access to all ec2 instances
+      - Effect: Allow
+        Action:
+          - ec2:Describe*
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - elasticloadbalancing:Describe*
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - cloudwatch:ListMetrics
+          - cloudwatch:GetMetricStatistics
+          - cloudwatch:Describe*
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - autoscaling:Describe*
+        Resource: "*"
+
+      # Grant read only access to all vpc resources
+      - Effect: Allow
+        Action:
+          - ec2:DescribeAddresses
+          - ec2:DescribeClassicLinkInstances
+          - ec2:DescribeCustomerGateways
+          - ec2:DescribeDhcpOptions
+          - ec2:DescribeFlowLogs
+          - ec2:DescribeInternetGateways
+          - ec2:DescribeMovingAddresses
+          - ec2:DescribeNatGateways
+          - ec2:DescribeNetworkAcls
+          - ec2:DescribeNetworkInterfaceAttribute
+          - ec2:DescribeNetworkInterfaces
+          - ec2:DescribePrefixLists
+          - ec2:DescribeRouteTables
+          - ec2:DescribeSecurityGroups
+          - ec2:DescribeSubnets
+          - ec2:DescribeTags
+          - ec2:DescribeVpcAttribute
+          - ec2:DescribeVpcClassicLink
+          - ec2:DescribeVpcEndpoints
+          - ec2:DescribeVpcEndpointServices
+          - ec2:DescribeVpcPeeringConnections
+          - ec2:DescribeVpcs
+          - ec2:DescribeVpnConnections
+          - ec2:DescribeVpnGateways
+        Resource: "*"
+
+      # Grant access to all cloudformation stacks tagged with the tag key="Pariveda", value="true"
+      - Effect: Allow
+        Action:
+          - cloudformation:*
+        Resource: "*"
+        Condition:
+          StringEqualsIgnoreCase:
+            aws:RequestTag/Pariveda: true
+
+      # Grant full access to cloudwatch alarms and logs (does not support restricting access via tags)
+      # Possibly needs additional restrictions
+      - Effect: Allow
+        Action:
+          - autoscaling:Describe*
+          - cloudwatch:*
+          - logs:*
+          - sns:*
+        Resource: "*"
+
+
+
