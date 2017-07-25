@@ -5,4 +5,4 @@ while [[ $# -gt 0 ]]; do
 done
 if [ -z "$BUCKET" ]; then BUCKET="123testtestbucket"; fi
 if [ -z "$KEY" ]; then KEY="backups"; fi
-for filename in /data/backups/*.tar.gz; do s3cmd put "$filename" s3://$BUCKET/$KEY/"$filename" --verbose; done
+for filename in /data/backups/*.tar.gz; do s3cmd put "$filename" s3://$BUCKET/$KEY"$filename" --verbose; done

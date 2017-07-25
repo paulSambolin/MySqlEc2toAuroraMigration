@@ -509,7 +509,7 @@ Resources:
                   - "done\n"
                   - "if [ -z \"$BUCKET\" ]; then BUCKET=\"123testtestbucket\"; fi\n"
                   - "if [ -z \"$KEY\" ]; then KEY=\"backups\"; fi\n"
-                  - "for filename in /data/backups/*.tar.gz; do s3cmd put \"$filename\" s3://$BUCKET/$KEY/\"$filename\" --verbose; done\n"
+                  - "for filename in /data/backups/*.tar.gz; do s3cmd put \"$filename\" s3://$BUCKET/$KEY\"$filename\" --verbose; done\n"
               mode: '000755'
               owner: root
               group: root
