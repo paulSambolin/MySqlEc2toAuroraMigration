@@ -6,7 +6,7 @@ Properties:
   PolicyDocument: 
     Version: "2012-10-17"
     Statement:
-      # Grant access to a single bucket (bucket needs to exist)
+      # Grant full access to a single bucket (bucket needs to exist)
       - Effect: "Allow"
         Action: 
           - "s3:*"
@@ -25,7 +25,7 @@ Properties:
           - "rds:Add*"
         Resource: "*"
 
-      # Grant access to all rds resources with the tag key="Pariveda", value="true"
+      # Grant full access to all rds resources with the tag key="Pariveda", value="true"
       - Effect: Allow
         Action:
           - "rds:*"
@@ -104,7 +104,7 @@ Properties:
           StringEqualsIgnoreCase:
             rds:ri-tag/Pariveda: true
 
-      # Grant access to all ec2 instances tagged with the tag key="Pariveda", value="true"
+      # Grant full access to all ec2 instances tagged with the tag key="Pariveda", value="true"
       - Effect: Allow
         Action:
           - "ec2:*"
@@ -113,10 +113,12 @@ Properties:
           StringEqualsIgnoreCase:
             ec2:ResourceTag/Pariveda: true
 
-      # Grant read access to all ec2 instances
+      # Grant create and read access to all ec2 instances
       - Effect: Allow
         Action:
-          - ec2:Describe*
+          - "ec2:Describe*"
+          - "ec2:Create*"
+          - "ec2:List*"
         Resource: "*"
       - Effect: Allow
         Action:
@@ -162,7 +164,7 @@ Properties:
           - ec2:DescribeVpnGateways
         Resource: "*"
 
-      # Grant access to all cloudformation stacks tagged with the tag key="Pariveda", value="true"
+      # Grant full access to all cloudformation stacks tagged with the tag key="Pariveda", value="true"
       - Effect: Allow
         Action:
           - cloudformation:*
@@ -170,6 +172,15 @@ Properties:
         Condition:
           StringEqualsIgnoreCase:
             aws:RequestTag/Pariveda: true
+
+      # Grant create and read access to all cloudformation
+      - Effect: Allow
+        Action:
+          - "cloudformation:Create*"
+          - "cloudformation:Describe*"
+          - "cloudformation:List*"
+          - "cloudformation:Get*"
+        Resource: "*"
 
       # Grant full access to cloudwatch alarms and logs (does not support restricting access via tags)
       # Possibly needs additional restrictions
