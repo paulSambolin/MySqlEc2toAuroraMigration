@@ -18,6 +18,55 @@
     {
       "Effect": "Allow",
       "Action": [
+        "autoscaling:Describe*",
+        "cloudwatch:*",
+        "logs:*",
+        "sns:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeAddresses",
+        "ec2:DescribeClassicLinkInstances",
+        "ec2:DescribeCustomerGateways",
+        "ec2:DescribeDhcpOptions",
+        "ec2:DescribeFlowLogs",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeMovingAddresses",
+        "ec2:DescribeNatGateways",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeNetworkInterfaceAttribute",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribePrefixLists",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeTags",
+        "ec2:DescribeVpcAttribute",
+        "ec2:DescribeVpcClassicLink",
+        "ec2:DescribeVpcEndpoints",
+        "ec2:DescribeVpcEndpointServices",
+        "ec2:DescribeVpcPeeringConnections",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeVpnConnections",
+        "ec2:DescribeVpnGateways"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:Get*",
+        "route53:List*",
+        "route53:TestDNSAnswer"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "rds:Create*",
         "rds:Describe*",
         "rds:List*",
@@ -160,18 +209,6 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:*"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "StringEqualsIgnoreCase": {
-          "ec2:ResourceTag/Pariveda": true
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "ec2:Describe*",
         "ec2:Create*",
         "ec2:List*"
@@ -204,42 +241,12 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:DescribeAddresses",
-        "ec2:DescribeClassicLinkInstances",
-        "ec2:DescribeCustomerGateways",
-        "ec2:DescribeDhcpOptions",
-        "ec2:DescribeFlowLogs",
-        "ec2:DescribeInternetGateways",
-        "ec2:DescribeMovingAddresses",
-        "ec2:DescribeNatGateways",
-        "ec2:DescribeNetworkAcls",
-        "ec2:DescribeNetworkInterfaceAttribute",
-        "ec2:DescribeNetworkInterfaces",
-        "ec2:DescribePrefixLists",
-        "ec2:DescribeRouteTables",
-        "ec2:DescribeSecurityGroups",
-        "ec2:DescribeSubnets",
-        "ec2:DescribeTags",
-        "ec2:DescribeVpcAttribute",
-        "ec2:DescribeVpcClassicLink",
-        "ec2:DescribeVpcEndpoints",
-        "ec2:DescribeVpcEndpointServices",
-        "ec2:DescribeVpcPeeringConnections",
-        "ec2:DescribeVpcs",
-        "ec2:DescribeVpnConnections",
-        "ec2:DescribeVpnGateways"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "cloudformation:*"
+        "ec2:*"
       ],
       "Resource": "*",
       "Condition": {
         "StringEqualsIgnoreCase": {
-          "aws:RequestTag/Pariveda": true
+          "ec2:ResourceTag/Pariveda": true
         }
       }
     },
@@ -256,12 +263,14 @@
     {
       "Effect": "Allow",
       "Action": [
-        "autoscaling:Describe*",
-        "cloudwatch:*",
-        "logs:*",
-        "sns:*"
+        "cloudformation:*"
       ],
-      "Resource": "*"
+      "Resource": "*",
+      "Condition": {
+        "StringEqualsIgnoreCase": {
+          "aws:RequestTag/Pariveda": true
+        }
+      }
     }
   ]
 }
