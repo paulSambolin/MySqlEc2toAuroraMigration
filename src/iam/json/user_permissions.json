@@ -172,7 +172,9 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:Describe*"
+        "ec2:Describe*",
+        "ec2:Create*",
+        "ec2:List*"
       ],
       "Resource": "*"
     },
@@ -240,6 +242,16 @@
           "aws:RequestTag/Pariveda": true
         }
       }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:Create*",
+        "cloudformation:Describe*",
+        "cloudformation:List*",
+        "cloudformation:Get*"
+      ],
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
