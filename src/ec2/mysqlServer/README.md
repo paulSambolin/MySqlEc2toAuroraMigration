@@ -1,23 +1,39 @@
 # MySQL server on ec2
-1. MySqlEc2.yml - spins up an ec2 instance with mysql and percona xtra back up installed
-2. scripts/backup.sh - given database credentials, a database name, and an s3 bucket create a backup of the database and upload to s3
-3. scripts/prepare.sh - prepare the backup for restoration (local only, not needed for restoration to aurora)
-4. scripts/connect.sh - connect to a remote mysql database using the mysql cli
-3. DummyTablesAndData.sql - SQL script to populate the database with tables and data
+1. MySqlEc2.yml - spins up an ec2 instance with mysql and percona innobackupex up installed
+2. scripts/backup.sh - given database credentials and the name of a database, backup the database
+3. scripts/upload.sh - given an s3 bucket and a prefix, upload the contents of the backup directory to s3
+4. scripts/prepare.sh - given the directory of a backup, prepare the backup for restoration (not needed for restoration to aurora)
+5. scripts/connect.sh - given database credentials, the name of a database, and the hostname of the host, connect to a remote mysql database using the mysql cli
+6. scripts/DummyTablesAndData.sql - SQL script to populate the database with tables and data
 
-### Connect to remote instances
-- Connect to ec2 instance
+## General connections
+### Connect to remote ec2 instances
+- Connect to remote ec2 instance
 `ssh -i MySqlServerKeyPair.pem ec2-user@52.87.93.24`
 
-### Create Backup
+### Connect to remote mysql db
+- Connect to remote mysql db
+`./connect -h 52.87.93.24`
+
+## Create Backup
 - Create the backup
 `sudo /tmp/backup.sh`
 
 - Record the lsn's from the output of the backup script
 `xtrabackup: Transaction log of lsn (<LSN>) to (<LSN>) was copied.`
 
+## Restore to Aurora
+### Upload to s3
+- Start the parallel multipart upload
+`sudo /tmp/upload.sh`
+
+### Restore from s3
+- Restore from s3
+`sudo /tmp/restore-from-s3.sh`
+
+## Restore back to ec2
 ### Prepare Backup
-- Prepare the backup for restoration
+- Prepare the backup for restoration (must be ssh'd in)
 `sudo /tmp/prepare.sh`
 
 - Record the lsn from the output of the prepare script
@@ -26,14 +42,3 @@
 ### Restore the backup
 - Stop mysqld, delete the datadir and start the restoration
 `sudo /tmp/restore.sh`
-
-- Connect to remote mysql db
-`./connect -h 52.87.93.24`
-
-### Upload to s3
-- Start the parallel multipart upload
-`sudo /tmp/upload.sh`
-
-- NOTE: Generate a dummy data file if you skipped the creating the backup
-`fallocate -l 6G backup.tar.gz`
-
