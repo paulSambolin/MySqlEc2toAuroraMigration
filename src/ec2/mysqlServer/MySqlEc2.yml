@@ -466,7 +466,7 @@ Resources:
                   - "chown -R mysql: /var/lib/mysql\n"
                   - "find /var/lib/mysql -type d -exec chmod 775 \"{}\" \\;\n"
                   - "# Create the backup\n"
-                  - "xtrabackup --backup --user=$DBUsername --password=$DBPassword --no-timestamp --target-dir=/data/backups\n"
+                  - "innobackupex --user=$DBUsername --password=$DBPassword --no-timestamp /data/backups\n"
               mode: '000755'
               owner: root
               group: root
@@ -476,7 +476,7 @@ Resources:
                 - ''
                 - - "#!/bin/bash\n"
                   - "# Prepare the backup for restoration\n"
-                  - "xtrabackup --prepare --target-dir=/data/backups\n"
+                  - "innobackupex --apply-log /data/backups\n"
               mode: '000755'
               owner: root
               group: root
@@ -490,11 +490,27 @@ Resources:
                   - "# Delete the datadir\n"
                   - "rm -rf /var/lib/mysql\n"
                   - "# Start the restoration\n"
-                  - "xtrabackup --copy-back --target-dir=/data/backups\n"
+                  - "innobackupex --copy-back /data/backups\n"
                   - "# Update the permissions of the datadir\n"
                   - "chown -R mysql:mysql /var/lib/mysql\n"
                   - "# Start mysqld\n"
                   - "service mysqld start\n"
+              mode: '000755'
+              owner: root
+              group: root
+            "/tmp/upload.sh":
+              content:
+                Fn::Join:
+                - ''
+                - - "#!/bin/bash\n"
+                  - "while [[ $# -gt 0 ]]; do\n"
+                  - "  case \"$1\" in --bucket|-b) BUCKET=$2 shift ;; --key|-k) KEY=$2 shift ;; *) echo \"Invalid argument: $1\" exit 1; esac\n"
+                  - "  shift\n"
+                  - "done\n"
+                  - "if [ -z \"$BUCKET\" ]; then BUCKET=\"123123123testtest\"; fi\n"
+                  - "if [ -z \"$KEY\" ]; then KEY=\"backups\"; fi\n"
+                  - "chmod -R 755 /data/backups\n"
+                  - "aws s3 cp /data/backups s3://$BUCKET/$KEY --recursive\n"
               mode: '000755'
               owner: root
               group: root

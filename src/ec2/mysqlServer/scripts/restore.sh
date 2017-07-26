@@ -4,10 +4,10 @@
 service mysqld stop
 
 # Delete the datadir
-rm -rf /data/backups
+rm -rf /var/lib/mysql
 
 # Start the restoration
-xtrabackup --copy-back --target-dir=/data/backups
+innobackupex --copy-back /data/backups
 
 # Update the permissions of the datadir
 chown -R mysql:mysql /var/lib/mysql
