@@ -462,11 +462,22 @@ Resources:
                 Fn::Join:
                 - ''
                 - - "#!/bin/bash\n"
-                  - "# Update mysql user group permissons\n"
+                  - "set -o errexit -o nounset -o pipefail -o xtrace\n"
                   - "chown -R mysql: /var/lib/mysql\n"
                   - "find /var/lib/mysql -type d -exec chmod 775 \"{}\" \\;\n"
-                  - "# Create the backup\n"
-                  - "innobackupex --user=$DBUsername --password=$DBPassword --no-timestamp /data/backups\n"
+                  - "SNAPDATE=\"$(date +\"%FT%H-%M\")\"\n"
+                  - "BACKUP_DIR=\"/var/lib/mysql/tmp/backup\"\n"
+                  - "TMP_DIR=\"/var/lib/mysql/tmp\"\n"
+                  - "S3_BUCKET=\"123123123testtest\"\n"
+                  - "LOG=\"/var/log/mysql_snapshot.log\"\n"
+                  - "GOF3R=\"/home/ec2-user/go/bin/gof3r\"\n"
+                  - "GOF3R_ARGS=\"--concurrency 64 --partsize 52428800 --header x-amz-server-side-encryption:AES256\"\n"
+                  - "INNOBACKUPEX=\"/usr/bin/innobackupex\"\n"
+                  - "S3_PATH=\"${HOSTNAME}/${SNAPDATE}-${HOSTNAME}.tar.gz\"\n"
+                  - "S3_URL=\"s3://${S3_BUCKET}/${S3_PATH}\"\n"
+                  - "echo \"$(date +\"%b %d %T\") Starting backup\" >> $LOG\n"
+                  - "$INNOBACKUPEX --lock-wait-timeout=300 --no-timestamp --safe-slave-backup --slave-info --stream=tar --user=${DBUsername} --password=${DBPassword} --tmpdir=${TMP_DIR} $BACKUP_DIR 2>> $LOG | pigz -p 64 | $GOF3R put $GOF3R_ARGS -b $S3_BUCKET -k $S3_PATH >> $LOG 2>&1\n"
+                  - "echo \"$(date +\"%b %d %T\") Backup complete, S3 URL is ${S3_URL}\" >> $LOG\n"
               mode: '000755'
               owner: root
               group: root
@@ -495,22 +506,6 @@ Resources:
                   - "chown -R mysql:mysql /var/lib/mysql\n"
                   - "# Start mysqld\n"
                   - "service mysqld start\n"
-              mode: '000755'
-              owner: root
-              group: root
-            "/tmp/upload.sh":
-              content:
-                Fn::Join:
-                - ''
-                - - "#!/bin/bash\n"
-                  - "while [[ $# -gt 0 ]]; do\n"
-                  - "  case \"$1\" in --bucket|-b) BUCKET=$2 shift ;; --key|-k) KEY=$2 shift ;; *) echo \"Invalid argument: $1\" exit 1; esac\n"
-                  - "  shift\n"
-                  - "done\n"
-                  - "if [ -z \"$BUCKET\" ]; then BUCKET=\"123123123testtest\"; fi\n"
-                  - "if [ -z \"$KEY\" ]; then KEY=\"backups\"; fi\n"
-                  - "chmod -R 755 /data/backups\n"
-                  - "aws s3 cp /data/backups s3://$BUCKET/$KEY --recursive\n"
               mode: '000755'
               owner: root
               group: root
@@ -617,6 +612,13 @@ Resources:
             - "yum --enablerepo=epel install libev -y\n"
             - "yum install http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm -y\n"
             - "yum install percona-xtrabackup-24 -y\n"
+
+            - "# Install dependecies for backups\n"
+            - "sudo yum -y install pigz\n"
+            - "sudo yum -y install golang\n"
+            - "echo GOPATH=$HOME/go >>/etc/environment \n"
+            - "echo GO15VENDOREXPERIMENT=1 >>/etc/environment \n"
+            - "go get github.com/rlmcpherson/s3gof3r/gof3r\n"
 
             - "# Export database credentials to environment vairables\n"
             - "echo DBUsername="

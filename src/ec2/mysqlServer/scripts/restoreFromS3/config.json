@@ -1,0 +1,36 @@
+{
+    "AvailabilityZones": [
+        ""
+    ], 
+    "BackupRetentionPeriod": 0, 
+    "CharacterSetName": "", 
+    "DatabaseName": "", 
+    "DBClusterIdentifier": "", 
+    "DBClusterParameterGroupName": "", 
+    "VpcSecurityGroupIds": [
+        ""
+    ], 
+    "DBSubnetGroupName": "", 
+    "Engine": "", 
+    "EngineVersion": "", 
+    "Port": 0, 
+    "MasterUsername": "", 
+    "MasterUserPassword": "", 
+    "OptionGroupName": "", 
+    "PreferredBackupWindow": "", 
+    "PreferredMaintenanceWindow": "", 
+    "Tags": [
+        {
+            "Key": "", 
+            "Value": ""
+        }
+    ], 
+    "StorageEncrypted": true, 
+    "KmsKeyId": "", 
+    "EnableIAMDatabaseAuthentication": true, 
+    "SourceEngine": "", 
+    "SourceEngineVersion": "", 
+    "S3BucketName": "", 
+    "S3Prefix": "", 
+    "S3IngestionRoleArn": ""
+}

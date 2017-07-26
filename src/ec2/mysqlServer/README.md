@@ -15,19 +15,14 @@
 - Connect to remote mysql db
 `./connect -h 52.87.93.24`
 
-## Create Backup
+## Create Backup and upload to s3
 - Create the backup
 `sudo /tmp/backup.sh`
 
 - Record the lsn's from the output of the backup script
 `xtrabackup: Transaction log of lsn (<LSN>) to (<LSN>) was copied.`
 
-## Restore to Aurora
-### Upload to s3
-- Start the parallel multipart upload
-`sudo /tmp/upload.sh`
-
-### Restore from s3
+### Restore from s3 to aurora
 - Restore from s3
 `sudo /tmp/restore-from-s3.sh`
 
