@@ -2,17 +2,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: A basic CloudFormation template for an RDS Aurora cluster.
 Parameters:
-  InstanceType:
-    Default: db.r3.large
-    AllowedValues:
-      - db.r3.large
-      - db.r3.xlarge
-      - db.r3.2xlarge
-      - db.r3.4xlarge
-      - db.r3.8xlarge
-    Description: The instance type to use for the database.
-    Type: String
-
   DBAZ:
     Type: String
     Description: The primary availability zone 
@@ -21,43 +10,6 @@ Parameters:
       - us-east-1b
       - us-east-1c
       - us-east-1e
-
-  DBName:
-    Type: String
-    Description: MySQL database name
-    Default: ParivedaTestDB
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-    ConstraintDescription: Must begin with a letter and contain only alphanumeric
-      characters
-
-  DBPassword:
-    AllowedPattern: "[a-zA-Z0-9]+"
-    ConstraintDescription: must contain only alphanumeric characters.
-    Description: The database admin account password.
-    MaxLength: '41'
-    MinLength: '8'
-    Default: Pariveda1
-#    NoEcho: 'true'
-    Type: String
-
-  DBUsername:
-    AllowedPattern: "[a-zA-Z0-9]+"
-    ConstraintDescription: must contain only alphanumeric characters.
-    Description: The database admin account user name.
-    Default: ParivedaUser
-    MaxLength: '16'
-    MinLength: '1'
-    Type: String
-
-  DatabaseBackupRetentionPeriod:
-    Type: String
-    Default: 7
-    AllowedValues:
-        - 1
-        - 7
-    Description: The database backup retention period in days.
 
 Resources:
   # NOTE: sysbench instances should be in the same vpc as the aurora instance
@@ -172,7 +124,7 @@ Resources:
       - Key: Pariveda
         Value: true
 
-  # Set up aurora cluster
+  # Set up DB subnet
   DatabaseSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -190,30 +142,7 @@ Resources:
       Description: Aurora Cluster Parameter Group
       Family: Aurora5.6
       Parameters:
-        binlog_format: ROW
-      Tags:
-      - Key: Pariveda
-        Value: true
-        
-
-  DatabaseCluster:
-    Type: AWS::RDS::DBCluster
-    Properties:
-      Engine: aurora
-      MasterUsername:
-        Ref: DBUsername
-      MasterUserPassword:
-        Ref: DBPassword
-      BackupRetentionPeriod:
-        Ref: DatabaseBackupRetentionPeriod
-      PreferredBackupWindow: 02:00-03:00
-      PreferredMaintenanceWindow: mon:03:00-mon:04:00
-      DBSubnetGroupName:
-        Ref: DatabaseSubnetGroup
-      DBClusterParameterGroupName:
-        Ref: DatabaseClusterParameterGroup
-      VpcSecurityGroupIds:
-        - Ref: SecurityGroup
+        binlog_format: MIXED
       Tags:
       - Key: Pariveda
         Value: true
@@ -226,48 +155,9 @@ Resources:
       Parameters:
         aurora_lab_mode: 1  # need to enable lab mode for fastdll
         log_bin_trust_function_creators: 1 # need to enable for pt-online-schema-change
-        binlog_format: STATEMENT
       Tags:
       - Key: Pariveda
         Value: true
-
-  # DatabasePrimaryInstance:
-  #   Type: AWS::RDS::DBInstance
-  #   Properties:
-  #     Engine: aurora
-  #     PubliclyAccessible: true
-  #     DBClusterIdentifier:
-  #       Ref: DatabaseCluster
-  #     DBInstanceClass:
-  #       Ref: InstanceType
-  #     DBSubnetGroupName:
-  #       Ref: DatabaseSubnetGroup
-  #     DBParameterGroupName:
-  #       Ref: DatabaseParameterGroup
-  #     AvailabilityZone:
-  #       Ref: DBAZ
-  #     Tags:
-  #     - Key: Pariveda
-  #       Value: true
-
-  # DatabaseReplicaInstance:
-  #   Type: AWS::RDS::DBInstance
-  #   Properties:
-  #     Engine: aurora
-  #     PubliclyAccessible: true
-  #     DBClusterIdentifier:
-  #       Ref: DatabaseCluster
-  #     DBInstanceClass:
-  #       Ref: InstanceType
-  #     DBSubnetGroupName:
-  #       Ref: DatabaseSubnetGroup
-  #     DBParameterGroupName:
-  #       Ref: DatabaseParameterGroup
-  #     AvailabilityZone:
-  #       Ref: DBAZ
-  #     Tags:
-  #     - Key: Pariveda
-  #       Value: true
 
 Outputs:
   # Export network and db connection information to sysbench instances
@@ -281,6 +171,7 @@ Outputs:
         - '-'
         - - VPC
           - Ref: AWS::StackName
+
   PublicSubnet:
     Description: The Subnet where the aurora db cluster is located
     Value:
@@ -289,8 +180,20 @@ Outputs:
       Name:
         Fn::Join:
         - '-'
-        - - Subnet
+        - - PublicSubnet
           - Ref: AWS::StackName
+
+  DBSubnetGroup:
+    Description: The DBSubnetGroup
+    Value:
+      Ref: DatabaseSubnetGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBSubnetGroup
+          - Ref: AWS::StackName
+
   SecurityGroup:
     Description: The security group assigned to the aurora db cluster
     Value:
@@ -301,43 +204,25 @@ Outputs:
         - '-'
         - - SecurityGroup
           - Ref: AWS::StackName
-  PublicIp:
-    Description: The IP address of the aurora db cluster
+  
+  DBClusterParameterGroup:
+    Description: The DBClusterParameterGroup
     Value:
-      Fn::GetAtt: [ DatabaseCluster, Endpoint.Address ]
+      Ref: DatabaseClusterParameterGroup
     Export:
       Name:
         Fn::Join:
         - '-'
-        - - AuroraIp
+        - - DBClusterParameterGroup
           - Ref: AWS::StackName
-  DBName:
-    Description: The name of the database on the aurora db cluster
+
+  DBParameterGroup:
+    Description: The DBParameterGroup
     Value:
-      Ref: DBName
+      Ref: DatabaseParameterGroup
     Export:
       Name:
         Fn::Join:
         - '-'
-        - - DBName
-          - Ref: AWS::StackName
-  DBUsername:
-    Description: The username of the user with access to the database on the aurora db cluster
-    Value:
-      Ref: DBUsername
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - DBUsername
-          - Ref: AWS::StackName
-  DBPassword:
-    Description: The password to the database on the aurora db cluster
-    Value:
-      Ref: DBPassword
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - DBPassword
+        - - DBParameterGroup
           - Ref: AWS::StackName
