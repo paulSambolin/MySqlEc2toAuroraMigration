@@ -616,8 +616,10 @@ Resources:
             - "# Install dependecies for backups\n"
             - "sudo yum -y install pigz\n"
             - "sudo yum -y install golang\n"
-            - "echo GOPATH=$HOME/go >>/etc/environment \n"
-            - "echo GO15VENDOREXPERIMENT=1 >>/etc/environment \n"
+            - "GOPATH=/home/ec2-user/go\n"
+            - "export GOPATH\n"
+            - "GO15VENDOREXPERIMENT=1\n"
+            - "export GO15VENDOREXPERIMENT\n"
             - "go get github.com/rlmcpherson/s3gof3r/gof3r\n"
 
             - "# Export database credentials to environment vairables\n"
