@@ -4,7 +4,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 if [ -z "$BUCKET" ]; then BUCKET="123123123testtest"; fi
-if [ -z "$KEY" ]; then KEY="backups"; fi
+if [ -z "$KEY" ]; then KEY="ip-172-31-25-24"; fi
 if [ -z "$STACK" ]; then STACK="resources"; fi
 if [ -z "$CONFIG" ]; then CONFIG="config.json"; fi
 if [ -z "$TEMPLATE" ]; then TEMPLATE="resources-pre.yml"; fi
@@ -20,10 +20,10 @@ SUBNETGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`DBSubnetG
 cat $CONFIG | jq --arg SUBNETGROUP $SUBNETGROUP '.DBSubnetGroupName = $SUBNETGROUP' > newconfig.json  && mv newconfig.json $CONFIG
 
 SECURITYGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`SecurityGroup-'$STACK'`].Value' --output text)
-cat $CONFIG | jq --arg SECURITYGROUP $SECURITYGROUP '.VpcSecurityGroupIds = $SECURITYGROUP' > newconfig.json  && mv newconfig.json $CONFIG
+cat $CONFIG | jq --arg SECURITYGROUP $SECURITYGROUP ".VpcSecurityGroupIds |= .+ [\"${SECURITYGROUP}\"]" > newconfig.json  && mv newconfig.json $CONFIG
 
-AURORAROLE=$(aws cloudformation list-exports --query 'Exports[?Name==`AuroraRole-'$STACK'`].Value' --output text)
-cat $CONFIG | jq --arg AURORAROLE $AURORAROLE '.S3IngestionRoleArn = $AURORAROLE' > newconfig.json  && mv newconfig.json $CONFIG
+AURORAROLEARN=$(aws cloudformation list-exports --query 'Exports[?Name==`AuroraRoleARN-'$STACK'`].Value' --output text)
+cat $CONFIG | jq --arg AURORAROLEARN $AURORAROLEARN '.S3IngestionRoleArn = $AURORAROLEARN' > newconfig.json  && mv newconfig.json $CONFIG
 
 PRIMARYAZ=$(aws cloudformation list-exports --query 'Exports[?Name==`PrimaryAZ-'$STACK'`].Value' --output text)
 cat $CONFIG | jq --arg PRIMARYAZ $PRIMARYAZ ".AvailabilityZones |= .+ [\"${PRIMARYAZ}\"]" > newconfig.json  && mv newconfig.json $CONFIG
@@ -36,8 +36,7 @@ cat $CONFIG | jq --arg BUCKET $BUCKET '.S3BucketName = $BUCKET' > newconfig.json
 cat $CONFIG | jq --arg KEY $KEY '.S3Prefix = $KEY' > newconfig.json  && mv newconfig.json $CONFIG
 
 #  Restore the cluster from s3
-
-
+aws rds restore-db-cluster-from-s3 --cli-input-json file://`pwd`/$CONFIG > clusterOutput.json
 
 # Create DB instances and associate with the DBCluster (use a different config)
 # PARAMETERGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`DBClusterParameterGroup-'$STACK'`].Value' --output text)

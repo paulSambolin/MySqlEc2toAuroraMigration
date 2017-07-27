@@ -1,13 +1,14 @@
 {
   "AvailabilityZones": [
-    
+
   ],
   "BackupRetentionPeriod": 1,
-  "CharacterSetName": "utf8",
   "DatabaseName": "",
   "DBClusterIdentifier": "aurora",
   "DBClusterParameterGroupName": "",
-  "VpcSecurityGroupIds": "",
+  "VpcSecurityGroupIds": [
+
+  ],
   "DBSubnetGroupName": "",
   "Engine": "aurora",
   "EngineVersion": "5.6.10a",
