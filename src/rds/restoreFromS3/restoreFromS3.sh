@@ -13,7 +13,7 @@ if [ -z "$INSTANCECONFIG" ]; then INSTANCECONFIG="instanceConfig.json"; fi
 if [ -z "$TEMPLATE" ]; then TEMPLATE="resources-pre.yml"; fi
 
 # # Deploy the resources stack
-# aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file $TEMPLATE --stack-name $STACK
+aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file $TEMPLATE --stack-name $STACK
 
 # Get the outputs from the resource stack and prepare cluster config
 CLUSTERPARAMETERGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`DBClusterParameterGroup-'$STACK'`].Value' --output text)
@@ -41,7 +41,7 @@ cat $CLUSTERCONFIG | jq --arg KEY $KEY '.S3Prefix = $KEY' > newconfig.json  && m
 cat $CLUSTERCONFIG | jq --arg CLUSTERNAME $CLUSTERNAME '.DBClusterIdentifier = $CLUSTERNAME' > newconfig.json  && mv newconfig.json $CLUSTERCONFIG
 
 # #  Restore the cluster from s3
-# aws rds restore-db-cluster-from-s3 --cli-input-json file://`pwd`/$CLUSTERCONFIG > clusterOutput.json
+aws rds restore-db-cluster-from-s3 --cli-input-json file://`pwd`/$CLUSTERCONFIG > clusterOutput.json
 
 # Create DB instances and associate with the DBCluster (use a different config)
 PARAMETERGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`DBParameterGroup-'$STACK'`].Value' --output text)
