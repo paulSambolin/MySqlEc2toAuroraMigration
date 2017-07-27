@@ -153,6 +153,8 @@ Resources:
       Family: Aurora5.6
       Parameters:
         binlog_format: MIXED
+        collation_server: utf8_general_ci
+        character_set_server: utf8
       Tags:
       - Key: Pariveda
         Value: true
