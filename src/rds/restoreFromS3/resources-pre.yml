@@ -2,10 +2,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: A basic CloudFormation template for an RDS Aurora cluster.
 Parameters:
-  DBAZ:
+  PrimaryAZ:
     Type: String
     Description: The primary availability zone 
     Default: us-east-1b
+    AllowedValues:
+      - us-east-1b
+      - us-east-1c
+      - us-east-1e
+
+  SecondaryAZ:
+    Type: String
+    Description: The secondary availability zone 
+    Default: us-east-1c
     AllowedValues:
       - us-east-1b
       - us-east-1c
@@ -62,7 +71,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone:
-        Ref: DBAZ
+        Ref: PrimaryAZ
       VpcId:
         Ref: VPC
       CidrBlock: 10.0.1.0/24
@@ -73,7 +82,8 @@ Resources:
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-east-1c
+      AvailabilityZone:
+        Ref: SecondaryAZ
       VpcId:
         Ref: VPC
       CidrBlock: 10.0.2.0/24
@@ -159,6 +169,27 @@ Resources:
       - Key: Pariveda
         Value: true
 
+  AuroraRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: rds.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: AuroraRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+
 Outputs:
   # Export network and db connection information to sysbench instances
   VPC:
@@ -225,4 +256,37 @@ Outputs:
         Fn::Join:
         - '-'
         - - DBParameterGroup
+          - Ref: AWS::StackName
+
+  AuroraRole:
+    Description: The AuroraRole
+    Value:
+      Ref: AuroraRole
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - AuroraRole
+          - Ref: AWS::StackName
+
+  PrimaryAZ:
+    Description: The PrimaryAZ
+    Value:
+      Ref: PrimaryAZ
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - PrimaryAZ
+          - Ref: AWS::StackName
+
+  SecondaryAZ:
+    Description: The SecondaryAZ
+    Value:
+      Ref: SecondaryAZ
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SecondaryAZ
           - Ref: AWS::StackName

@@ -1,6 +1,14 @@
 # Restore DB Cluster from S3
 This folder contains everything needed to restore a DB Cluster from a mysql backup in s3
 
+### Questions
+Is data encrypted using a kms key?  If so you can unencrypt it as we restore to save time.  If done in the app set StorageEncrypted=false
+
+### Prerequisites
+1. The machine you run this restore script from (preferably the bastion host) must have jq installed in order to generate json on the fly
+2. " " must have all the files in ./ 
+
+### Files
 1. `config.json` - The config file contains all of the options needed to restore the backup from s3
 2. `resources-pre.yml` - Cloudformation script for spinning up resources needed for the aurora restoration:
   - VPC (Venmo)
