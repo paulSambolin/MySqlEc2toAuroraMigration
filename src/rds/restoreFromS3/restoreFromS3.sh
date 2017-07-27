@@ -10,7 +10,7 @@ if [ -z "$CLUSTERNAME" ]; then CLUSTERNAME="aurora"; fi
 if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora1"; fi
 if [ -z "$CLUSTERCONFIG" ]; then CLUSTERCONFIG="clusterConfig.json"; fi
 if [ -z "$INSTANCECONFIG" ]; then INSTANCECONFIG="instanceConfig.json"; fi
-if [ -z "$TEMPLATE" ]; then TEMPLATE="resources-pre.yml"; fi
+if [ -z "$TEMPLATE" ]; then TEMPLATE="resources.yml"; fi
 
 # # Deploy the resources stack
 aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file $TEMPLATE --stack-name $STACK
