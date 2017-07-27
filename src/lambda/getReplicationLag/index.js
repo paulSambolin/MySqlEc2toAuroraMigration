@@ -42,8 +42,8 @@ exports.handler = (event, context,callback) => {
             else if (result[0]["Seconds_Behind_Master"] == null) {
                 body = "Seconds_Behind_Master field is null, you should check the status in more detail.";
             }
-            else if (typeof(result[0]["Seconds_Behind_Master"] >= 0) == number) {
-                body = "Replication Lag: " + result[0]["Seconds_Behind_Master"] + "seconds behind.";
+            else {
+                body = "Replication Lag: " + result[0]["Seconds_Behind_Master"] + " seconds behind.";
             }
 
             // Signal Success
