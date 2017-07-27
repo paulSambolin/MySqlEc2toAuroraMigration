@@ -1,0 +1,73 @@
+{
+    "DBInstance": {
+        "PubliclyAccessible": true, 
+        "MasterUsername": "ParivedaUser", 
+        "MonitoringInterval": 0, 
+        "LicenseModel": "general-public-license", 
+        "VpcSecurityGroups": [
+            {
+                "Status": "active", 
+                "VpcSecurityGroupId": "sg-487e7a39"
+            }
+        ], 
+        "CopyTagsToSnapshot": true, 
+        "OptionGroupMemberships": [
+            {
+                "Status": "in-sync", 
+                "OptionGroupName": "default:aurora-5-6"
+            }
+        ], 
+        "PendingModifiedValues": {}, 
+        "Engine": "aurora", 
+        "MultiAZ": false, 
+        "DBSecurityGroups": [], 
+        "DBParameterGroups": [
+            {
+                "DBParameterGroupName": "resources-databaseparametergroup-14ooviwxr0du6", 
+                "ParameterApplyStatus": "in-sync"
+            }
+        ], 
+        "AutoMinorVersionUpgrade": false, 
+        "PreferredBackupWindow": "03:14-03:44", 
+        "PromotionTier": 1, 
+        "DBSubnetGroup": {
+            "Subnets": [
+                {
+                    "SubnetStatus": "Active", 
+                    "SubnetIdentifier": "subnet-58076674", 
+                    "SubnetAvailabilityZone": {
+                        "Name": "us-east-1b"
+                    }
+                }, 
+                {
+                    "SubnetStatus": "Active", 
+                    "SubnetIdentifier": "subnet-ff015ab7", 
+                    "SubnetAvailabilityZone": {
+                        "Name": "us-east-1c"
+                    }
+                }
+            ], 
+            "DBSubnetGroupName": "resources-databasesubnetgroup-538qn9hyoeqr", 
+            "VpcId": "vpc-02d3b97b", 
+            "DBSubnetGroupDescription": "CloudFormation managed DB subnet group.", 
+            "SubnetGroupStatus": "Complete"
+        }, 
+        "ReadReplicaDBInstanceIdentifiers": [], 
+        "AllocatedStorage": 1, 
+        "DBInstanceArn": "arn:aws:rds:us-east-1:207377804245:db:aurora1", 
+        "BackupRetentionPeriod": 1, 
+        "PreferredMaintenanceWindow": "tue:03:56-tue:04:26", 
+        "DBInstanceStatus": "creating", 
+        "IAMDatabaseAuthenticationEnabled": false, 
+        "EngineVersion": "5.6.10a", 
+        "DomainMemberships": [], 
+        "DBClusterIdentifier": "aurora", 
+        "StorageType": "aurora", 
+        "DbiResourceId": "db-VQ7K2XPGB42NMP5ZI3ZO54ABXQ", 
+        "CACertificateIdentifier": "rds-ca-2015", 
+        "StorageEncrypted": false, 
+        "DBInstanceClass": "db.r3.large", 
+        "DbInstancePort": 0, 
+        "DBInstanceIdentifier": "aurora1"
+    }
+}

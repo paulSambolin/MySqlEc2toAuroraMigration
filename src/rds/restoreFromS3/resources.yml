@@ -1,0 +1,294 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: A basic CloudFormation template for an RDS Aurora cluster.
+Parameters:
+  PrimaryAZ:
+    Type: String
+    Description: The primary availability zone 
+    Default: us-east-1b
+    AllowedValues:
+      - us-east-1b
+      - us-east-1c
+      - us-east-1e
+
+  SecondaryAZ:
+    Type: String
+    Description: The secondary availability zone 
+    Default: us-east-1c
+    AllowedValues:
+      - us-east-1b
+      - us-east-1c
+      - us-east-1e
+
+Resources:
+  # NOTE: sysbench instances should be in the same vpc as the aurora instance
+  # Setup VPC, Subnet and network configuration
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  InternetEgressRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Ref: PrimaryAZ
+      VpcId:
+        Ref: VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+      - Key: Pariveda
+        Value: true
+  
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Ref: SecondaryAZ
+      VpcId:
+        Ref: VPC
+      CidrBlock: 10.0.2.0/24
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  PublicSubnetRouteTableAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PublicSubnetRouteTableAssoc2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet2
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, HTTPS, & SSH access to Aurora instance
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '3306'
+        ToPort: '3306'
+        CidrIp: 0.0.0.0/0
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  # Set up DB subnet
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds:
+        - Ref: PublicSubnet
+        - Ref: PublicSubnet2
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  DatabaseClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties: 
+      Description: Aurora Cluster Parameter Group
+      Family: Aurora5.6
+      Parameters:
+        binlog_format: MIXED
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  DatabaseParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties: 
+      Description: Aurora Parameter Group
+      Family: Aurora5.6
+      Parameters:
+        aurora_lab_mode: 1  # need to enable lab mode for fastdll
+        log_bin_trust_function_creators: 1 # need to enable for pt-online-schema-change
+      Tags:
+      - Key: Pariveda
+        Value: true
+
+  AuroraRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: rds.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: AuroraRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+
+Outputs:
+  # Export network and db connection information to sysbench instances
+  VPC:
+    Description: The VPC where the aurora db cluster is located
+    Value:
+      Ref: VPC
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - VPC
+          - Ref: AWS::StackName
+
+  PublicSubnet:
+    Description: The Subnet where the aurora db cluster is located
+    Value:
+      Ref: PublicSubnet
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - PublicSubnet
+          - Ref: AWS::StackName
+
+  DBSubnetGroup:
+    Description: The DBSubnetGroup
+    Value:
+      Ref: DatabaseSubnetGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBSubnetGroup
+          - Ref: AWS::StackName
+
+  SecurityGroup:
+    Description: The security group assigned to the aurora db cluster
+    Value:
+      Ref: SecurityGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SecurityGroup
+          - Ref: AWS::StackName
+  
+  DBClusterParameterGroup:
+    Description: The DBClusterParameterGroup
+    Value:
+      Ref: DatabaseClusterParameterGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBClusterParameterGroup
+          - Ref: AWS::StackName
+
+  DBParameterGroup:
+    Description: The DBParameterGroup
+    Value:
+      Ref: DatabaseParameterGroup
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - DBParameterGroup
+          - Ref: AWS::StackName
+
+  AuroraRoleARN:
+    Description: The AuroraRoleARN
+    Value:
+      Fn::GetAtt:
+        - AuroraRole
+        - Arn
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - AuroraRoleARN
+          - Ref: AWS::StackName
+
+  PrimaryAZ:
+    Description: The PrimaryAZ
+    Value:
+      Ref: PrimaryAZ
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - PrimaryAZ
+          - Ref: AWS::StackName
+
+  SecondaryAZ:
+    Description: The SecondaryAZ
+    Value:
+      Ref: SecondaryAZ
+    Export:
+      Name:
+        Fn::Join:
+        - '-'
+        - - SecondaryAZ
+          - Ref: AWS::StackName
