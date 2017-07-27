@@ -1,0 +1,17 @@
+{
+  "DBInstanceIdentifier": "",
+  "DBInstanceClass": "db.r3.large",
+  "Engine": "aurora",
+  "DBSubnetGroupName": "",
+  "DBParameterGroupName": "",
+  "AutoMinorVersionUpgrade": false,
+  "PubliclyAccessible": true,
+  "Tags": [
+    {
+      "Key": "Pariveda",
+      "Value": "true"
+    }
+  ],
+  "DBClusterIdentifier": "",
+  "CopyTagsToSnapshot": true
+}

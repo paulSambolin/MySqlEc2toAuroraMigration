@@ -15,7 +15,6 @@
   "Port": 3306,
   "MasterUsername": "ParivedaUser",
   "MasterUserPassword": "Pariveda1",
-  "OptionGroupName": "",
   "PreferredBackupWindow": "03:14-03:44",
   "PreferredMaintenanceWindow": "fri:10:07-fri:10:37",
   "Tags": [
@@ -25,7 +24,6 @@
     }
   ],
   "StorageEncrypted": false,
-  "KmsKeyId": "",
   "EnableIAMDatabaseAuthentication": false,
   "SourceEngine": "mysql",
   "SourceEngineVersion": "5.6",
