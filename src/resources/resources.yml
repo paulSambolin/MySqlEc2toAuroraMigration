@@ -67,6 +67,7 @@ Resources:
       GatewayId:
         Ref: InternetGateway
 
+# try MapPublicIpOnLaunch: true
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:

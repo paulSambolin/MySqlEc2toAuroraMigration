@@ -1,10 +1,13 @@
 # MySQL server on ec2
 1. MySqlEc2.yml - spins up an ec2 instance with mysql and percona innobackupex up installed
-2. scripts/backup.sh - given database credentials and the name of a database, backup the database
-3. scripts/upload.sh - given an s3 bucket and a prefix, upload the contents of the backup directory to s3
+2. scripts/backup.sh - Venmo's backup and upload script
 4. scripts/prepare.sh - given the directory of a backup, prepare the backup for restoration (not needed for restoration to aurora)
 5. scripts/connect.sh - given database credentials, the name of a database, and the hostname of the host, connect to a remote mysql database using the mysql cli
 6. scripts/DummyTablesAndData.sql - SQL script to populate the database with tables and data
+
+# Deploy the ec2 instance
+- Expects VPC resources from /rds/resources.yml to already be deployed to a stack named `resources`.  Override this default by specifying `-s <stack-name>` or `--stack <stack-name>`
+`./scripts/deployMySqlEc2.sh`
 
 ## General connections
 ### Connect to remote ec2 instances
@@ -22,11 +25,7 @@
 - Record the lsn's from the output of the backup script
 `xtrabackup: Transaction log of lsn (<LSN>) to (<LSN>) was copied.`
 
-### Restore from s3 to aurora
-- Restore from s3
-`sudo /tmp/restore-from-s3.sh`
-
-## Restore back to ec2
+## Restore back to local mysql
 ### Prepare Backup
 - Prepare the backup for restoration (must be ssh'd in)
 `sudo /tmp/prepare.sh`

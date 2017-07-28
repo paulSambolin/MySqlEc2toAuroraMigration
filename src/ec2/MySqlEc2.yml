@@ -7,6 +7,10 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Default: MySqlServerKeyPair
     ConstraintDescription: Can contain only ASCII characters.
+  ResourceTemplate:
+    Type: String
+    Description: The name of the resource template with vpc
+    Default: resources
   DBName:
     Type: String
     Description: MySQL database name
@@ -214,112 +218,18 @@ Mappings:
 
 
 Resources:
-  # Un-comment for VPC
-  # Setup VPC, Subnet and network configuration
-  # VPC:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: 10.0.0.0/16
-  #     EnableDnsSupport: 'true'
-  #     EnableDnsHostnames: 'true'
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # InternetGateway:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # InternetGatewayAttachment:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId:
-  #       Ref: VPC
-  #     InternetGatewayId:
-  #       Ref: InternetGateway
-
-  # PublicRouteTable:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId:
-  #       Ref: VPC
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # InternetEgressRoute:
-  #   Type: AWS::EC2::Route
-  #   DependsOn: InternetGatewayAttachment
-  #   Properties:
-  #     RouteTableId:
-  #       Ref: PublicRouteTable
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId:
-  #       Ref: InternetGateway
-
-  # PublicSubnet:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone: us-east-1b
-  #     VpcId:
-  #       Ref: VPC
-  #     CidrBlock: 10.0.1.0/24
-  #     Tags:
-  #     - Key: Application
-  #       Value: MySqltoAurora
-
-  # PublicSubnetRouteTableAssoc:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId:
-  #       Ref: PublicSubnet
-  #     RouteTableId:
-  #       Ref: PublicRouteTable
-
-  # PublicIp:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
-
-  # IPAssoc:
-  #   Type: AWS::EC2::EIPAssociation
-  #   Properties:
-  #     InstanceId:
-  #       Ref: MySqlServer
-  #     EIP:
-  #       Ref: PublicIp
-
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  PublicIp:
+    Type: AWS::EC2::EIP
     Properties:
-      GroupDescription: Enable HTTP, HTTPS, & SSH access to EC2 instance
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '80'
-        ToPort: '80'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '22'
-        ToPort: '22'
-        CidrIp:
-          Ref: SSHLocation
-      - IpProtocol: tcp
-        FromPort: '443'
-        ToPort: '443'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '3306'
-        ToPort: '3306'
-        CidrIp: 0.0.0.0/0
-      # Un-comment for VPC
-      # VpcId:
-      #   Ref: VPC
-      Tags:
-      - Key: Pariveda
-        Value: true
+      Domain: vpc
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: MySqlServer
+      EIP:
+        Ref: PublicIp
 
   # Role for the ec2 server
   RootRole:
@@ -578,10 +488,18 @@ Resources:
       InstanceType:
         Ref: InstanceType
       SecurityGroupIds:
-      - Ref: SecurityGroup
+        - Fn::ImportValue:
+            Fn::Join:
+            - '-'
+            - - SecurityGroup
+              - Ref: ResourceTemplate
       # Un-comment for VPC
-      # SubnetId:
-      #   Ref: PublicSubnet
+      SubnetId:
+        Fn::ImportValue:
+          Fn::Join:
+          - '-'
+          - - PublicSubnet
+            - Ref: ResourceTemplate
       Monitoring: 'true'
       IamInstanceProfile:
         Ref: RootRoleInstanceProfile
@@ -637,39 +555,6 @@ Resources:
             - "'\n"
 
 Outputs:
-  # Uncomment for VPC
-  # Output network and db connection information to the console
-  # VPC:
-  #   Description: The VPC where the MySql server is located
-  #   Value:
-  #     Ref: VPC
-  #   Export:
-  #     Name:
-  #       Fn::Join:
-  #       - '-'
-  #       - - MySqlVPCId
-  #         - Ref: AWS::StackName
-  # PublicSubnet:
-  #   Description: The Subnet where the MySql server is located
-  #   Value:
-  #     Ref: PublicSubnet
-  #   Export:
-  #     Name:
-  #       Fn::Join:
-  #       - '-'
-  #       - - MySqlPublicSubnetId
-  #         - Ref: AWS::StackName
-
-  SecurityGroup:
-    Description: The security group assigned to the MySql server
-    Value:
-      Ref: SecurityGroup
-    Export:
-      Name:
-        Fn::Join:
-        - '-'
-        - - MySqlSecurityGroup
-          - Ref: AWS::StackName
   KeyPair:
     Description: The key pair securing ssh connections to the MySql server
     Value:
@@ -684,9 +569,9 @@ Outputs:
     Description: The IP address of the MySql server
     Value:
       # Uncomment for non-VPC
-      Fn::GetAtt: [ MySqlServer, PublicIp ]
+      # Fn::GetAtt: [ MySqlServer, PublicIp ]
       # Uncomment for VPC
-      #Ref: PublicIp
+      Ref: PublicIp
     Export:
       Name:
         Fn::Join:
