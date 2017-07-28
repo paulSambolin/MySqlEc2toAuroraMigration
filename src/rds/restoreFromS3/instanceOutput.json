@@ -7,7 +7,7 @@
         "VpcSecurityGroups": [
             {
                 "Status": "active", 
-                "VpcSecurityGroupId": "sg-487e7a39"
+                "VpcSecurityGroupId": "sg-de7173af"
             }
         ], 
         "CopyTagsToSnapshot": true, 
@@ -23,7 +23,7 @@
         "DBSecurityGroups": [], 
         "DBParameterGroups": [
             {
-                "DBParameterGroupName": "resources-databaseparametergroup-14ooviwxr0du6", 
+                "DBParameterGroupName": "resources-databaseparametergroup-14wrvo4yvt89u", 
                 "ParameterApplyStatus": "in-sync"
             }
         ], 
@@ -34,21 +34,21 @@
             "Subnets": [
                 {
                     "SubnetStatus": "Active", 
-                    "SubnetIdentifier": "subnet-58076674", 
+                    "SubnetIdentifier": "subnet-4792f26b", 
                     "SubnetAvailabilityZone": {
                         "Name": "us-east-1b"
                     }
                 }, 
                 {
                     "SubnetStatus": "Active", 
-                    "SubnetIdentifier": "subnet-ff015ab7", 
+                    "SubnetIdentifier": "subnet-0da9f345", 
                     "SubnetAvailabilityZone": {
                         "Name": "us-east-1c"
                     }
                 }
             ], 
-            "DBSubnetGroupName": "resources-databasesubnetgroup-538qn9hyoeqr", 
-            "VpcId": "vpc-02d3b97b", 
+            "DBSubnetGroupName": "resources-databasesubnetgroup-12kyg4gim2mxn", 
+            "VpcId": "vpc-0f354276", 
             "DBSubnetGroupDescription": "CloudFormation managed DB subnet group.", 
             "SubnetGroupStatus": "Complete"
         }, 
@@ -56,14 +56,14 @@
         "AllocatedStorage": 1, 
         "DBInstanceArn": "arn:aws:rds:us-east-1:207377804245:db:aurora1", 
         "BackupRetentionPeriod": 1, 
-        "PreferredMaintenanceWindow": "tue:03:56-tue:04:26", 
+        "PreferredMaintenanceWindow": "sat:04:24-sat:04:54", 
         "DBInstanceStatus": "creating", 
         "IAMDatabaseAuthenticationEnabled": false, 
         "EngineVersion": "5.6.10a", 
         "DomainMemberships": [], 
         "DBClusterIdentifier": "aurora", 
         "StorageType": "aurora", 
-        "DbiResourceId": "db-VQ7K2XPGB42NMP5ZI3ZO54ABXQ", 
+        "DbiResourceId": "db-QAUNGLWBBNYWQ2WHSAQ3KIS24I", 
         "CACertificateIdentifier": "rds-ca-2015", 
         "StorageEncrypted": false, 
         "DBInstanceClass": "db.r3.large", 

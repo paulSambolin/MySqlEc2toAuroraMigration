@@ -1,19 +1,15 @@
 #!/bin/bash
 while [[ $# -gt 0 ]]; do
-    case "$1" in --bucket|-b) BUCKET=$2 shift ;; --key|-k) KEY=$2 shift ;; --stack|-s) STACK=$2 shift ;; --clusterName|-cn) CLUSTERNAME=$2 shift ;; --instanceName|-in) INSTANCENAME=$2 shift ;; --clusterConfig|-cc) CLUSTERCONFIG=$2 shift ;; --instanceConfig|-ic) INSTANCECONFIG=$2 shift ;; --template|-t) TEMPLATE=$2 shift ;; *) echo "Invalid argument: $1" exit 1; esac
+    case "$1" in --bucket|-b) BUCKET=$2 shift ;; --key|-k) KEY=$2 shift ;; --stack|-s) STACK=$2 shift ;; --clusterName|-cn) CLUSTERNAME=$2 shift ;; --instanceName|-in) INSTANCENAME=$2 shift ;; --clusterConfig|-cc) CLUSTERCONFIG=$2 shift ;; --instanceConfig|-ic) INSTANCECONFIG=$2 shift ;; *) echo "Invalid argument: $1" exit 1; esac
     shift
 done
 if [ -z "$BUCKET" ]; then BUCKET="123123123testtest"; fi
-if [ -z "$KEY" ]; then KEY="ip-172-31-25-24"; fi
+if [ -z "$KEY" ]; then KEY="ip-10-0-1-107"; fi
 if [ -z "$STACK" ]; then STACK="resources"; fi
 if [ -z "$CLUSTERNAME" ]; then CLUSTERNAME="aurora"; fi
 if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora1"; fi
 if [ -z "$CLUSTERCONFIG" ]; then CLUSTERCONFIG="clusterConfig.json"; fi
 if [ -z "$INSTANCECONFIG" ]; then INSTANCECONFIG="instanceConfig.json"; fi
-if [ -z "$TEMPLATE" ]; then TEMPLATE="resources.yml"; fi
-
-# # Deploy the resources stack
-aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file $TEMPLATE --stack-name $STACK
 
 # Get the outputs from the resource stack and prepare cluster config
 CLUSTERPARAMETERGROUP=$(aws cloudformation list-exports --query 'Exports[?Name==`DBClusterParameterGroup-'$STACK'`].Value' --output text)

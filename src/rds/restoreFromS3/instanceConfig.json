@@ -1,9 +1,9 @@
 {
-  "DBInstanceIdentifier": "",
+  "DBInstanceIdentifier": "aurora1",
   "DBInstanceClass": "db.r3.large",
   "Engine": "aurora",
-  "DBSubnetGroupName": "",
-  "DBParameterGroupName": "",
+  "DBSubnetGroupName": "resources-databasesubnetgroup-12kyg4gim2mxn",
+  "DBParameterGroupName": "resources-databaseparametergroup-14wrvo4yvt89u",
   "AutoMinorVersionUpgrade": false,
   "PubliclyAccessible": true,
   "Tags": [
@@ -12,6 +12,6 @@
       "Value": "true"
     }
   ],
-  "DBClusterIdentifier": "",
+  "DBClusterIdentifier": "aurora",
   "CopyTagsToSnapshot": true
 }

@@ -8,16 +8,11 @@ Is data encrypted using a kms key?  If so you can unencrypt it as we restore to 
 1. The machine you run this restore script from (preferably the bastion host) must have jq installed in order to generate json on the fly
 2. " " must have all the files in ./ 
 
-### Files
-1. `resources.yml` - Cloudformation script for spinning up resources needed for the aurora restoration:
-  - VPC (Venmo)
-  - Subnets (Venmo)
-  - Database Subnet Group (Venmo)
-  - Security Group (Venmo)
-  - IAM Role (Venmo)
-  - Database Cluster Parameter Group (Pariveda)
-  - Database Parameter Group (Pariveda)
+### Restore from S3 to Aurora
+- Please see lines 6-12 in restoreFromS3.sh for all configurable parameters.  The most important ones are the s3 bucket and the s3 key where the backup is located, and the name of the stack which contains the resources in ../resources/resources.yml
+`./restoreFromS3.sh -s resources -b backupBucket -k backupPrefix`
 
+### Files
 2. `restoreFromS3.sh` - Restores the database from s3 to aurora
   - deploys the cloudformation stack resources.yml
   - call the awscli to restore-db-cluster-from-s3 and pass the config options from config.json
@@ -28,3 +23,4 @@ Is data encrypted using a kms key?  If so you can unencrypt it as we restore to 
 
 5. `clusterOutput.json` - Contains the output for the db cluster
 6. `instanceOutput.json` - Contains the output for the db instance
+
