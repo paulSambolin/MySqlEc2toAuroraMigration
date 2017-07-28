@@ -4,6 +4,8 @@
 4. scripts/prepare.sh - given the directory of a backup, prepare the backup for restoration (not needed for restoration to aurora)
 5. scripts/connect.sh - given database credentials, the name of a database, and the hostname of the host, connect to a remote mysql database using the mysql cli
 6. scripts/DummyTablesAndData.sql - SQL script to populate the database with tables and data
+7. scripts/replication-to-aurora.sh - a shell script that connects to a source mysql database and target aurora database to configure and start binlog replication
+8. scripts/replication-to-mysql.sh - a shell script that connects to a source aurora database and target mysql database to configure and start binlog replication
 
 # Deploy the ec2 instance
 - Expects VPC resources from /rds/resources.yml to already be deployed to a stack named `resources`.  Override this default by specifying `-s <stack-name>` or `--stack <stack-name>`
