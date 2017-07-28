@@ -1,6 +1,12 @@
 {
   "AvailabilityZones": [
     "us-east-1b",
+    "us-east-1c",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1b",
     "us-east-1c"
   ],
   "BackupRetentionPeriod": 1,
@@ -8,6 +14,9 @@
   "DBClusterIdentifier": "aurora",
   "DBClusterParameterGroupName": "resources-databaseclusterparametergroup-1bjm1p4hgxnrp",
   "VpcSecurityGroupIds": [
+    "sg-de7173af",
+    "sg-de7173af",
+    "sg-de7173af",
     "sg-de7173af"
   ],
   "DBSubnetGroupName": "resources-databasesubnetgroup-12kyg4gim2mxn",

@@ -1,5 +1,5 @@
 {
-  "DBInstanceIdentifier": "aurora1",
+  "DBInstanceIdentifier": "aurora2",
   "DBInstanceClass": "db.r3.large",
   "Engine": "aurora",
   "DBSubnetGroupName": "resources-databasesubnetgroup-12kyg4gim2mxn",

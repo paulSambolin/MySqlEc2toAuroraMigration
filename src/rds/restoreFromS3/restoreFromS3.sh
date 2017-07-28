@@ -7,7 +7,7 @@ if [ -z "$BUCKET" ]; then BUCKET="123123123testtest"; fi
 if [ -z "$KEY" ]; then KEY="ip-10-0-1-107"; fi
 if [ -z "$STACK" ]; then STACK="resources"; fi
 if [ -z "$CLUSTERNAME" ]; then CLUSTERNAME="aurora"; fi
-if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora1"; fi
+if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora2"; fi
 if [ -z "$CLUSTERCONFIG" ]; then CLUSTERCONFIG="clusterConfig.json"; fi
 if [ -z "$INSTANCECONFIG" ]; then INSTANCECONFIG="instanceConfig.json"; fi
 
