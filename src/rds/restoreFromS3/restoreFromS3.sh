@@ -7,7 +7,7 @@ if [ -z "$BUCKET" ]; then BUCKET="123123123testtest"; fi
 if [ -z "$KEY" ]; then KEY="ip-10-0-1-107"; fi
 if [ -z "$STACK" ]; then STACK="resources"; fi
 if [ -z "$CLUSTERNAME" ]; then CLUSTERNAME="aurora"; fi
-if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora2"; fi
+if [ -z "$INSTANCENAME" ]; then INSTANCENAME="aurora1"; fi
 if [ -z "$CLUSTERCONFIG" ]; then CLUSTERCONFIG="clusterConfig.json"; fi
 if [ -z "$INSTANCECONFIG" ]; then INSTANCECONFIG="instanceConfig.json"; fi
 
@@ -36,7 +36,7 @@ cat $CLUSTERCONFIG | jq --arg KEY $KEY '.S3Prefix = $KEY' > newconfig.json  && m
 
 cat $CLUSTERCONFIG | jq --arg CLUSTERNAME $CLUSTERNAME '.DBClusterIdentifier = $CLUSTERNAME' > newconfig.json  && mv newconfig.json $CLUSTERCONFIG
 
-# #  Restore the cluster from s3
+#  Restore the cluster from s3
 aws rds restore-db-cluster-from-s3 --cli-input-json file://`pwd`/$CLUSTERCONFIG > clusterOutput.json
 
 # Create DB instances and associate with the DBCluster (use a different config)
@@ -50,3 +50,7 @@ cat $INSTANCECONFIG | jq --arg CLUSTERNAME $CLUSTERNAME '.DBClusterIdentifier = 
 cat $INSTANCECONFIG | jq --arg INSTANCENAME $INSTANCENAME '.DBInstanceIdentifier = $INSTANCENAME' > newconfig.json  && mv newconfig.json $INSTANCECONFIG
 
 aws rds create-db-instance --cli-input-json file://`pwd`/$INSTANCECONFIG > instanceOutput.json
+
+INSTANCENAME=$INSTANCENAME-reader
+cat $INSTANCECONFIG | jq --arg INSTANCENAME $INSTANCENAME '.DBInstanceIdentifier = $INSTANCENAME' > newconfig.json  && mv newconfig.json $INSTANCECONFIG
+aws rds create-db-instance --cli-input-json file://`pwd`/$INSTANCECONFIG > readerInstanceOutput.json
