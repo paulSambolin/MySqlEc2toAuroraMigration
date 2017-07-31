@@ -10,4 +10,7 @@ Practice for a mysql migration from an ec2 instance to aws aurora
   - Follow the instructions in ec2/README.md
 4. Restore to aurora in the same vpc
   - Follow the instructions in rds/restoreFromS3/README.md
-5. 
+5. setup replication between ec2 and aurora
+  - Follow instructions in sql/README.md
+6. Monitor replicaiton lag and send to cloudwatch
+7. 

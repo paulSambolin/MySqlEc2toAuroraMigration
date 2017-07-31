@@ -54,20 +54,20 @@
         }, 
         "ReadReplicaDBInstanceIdentifiers": [], 
         "AllocatedStorage": 1, 
-        "DBInstanceArn": "arn:aws:rds:us-east-1:207377804245:db:aurora1", 
+        "DBInstanceArn": "arn:aws:rds:us-east-1:207377804245:db:aurora2", 
         "BackupRetentionPeriod": 1, 
-        "PreferredMaintenanceWindow": "sat:04:24-sat:04:54", 
+        "PreferredMaintenanceWindow": "sat:08:32-sat:09:02", 
         "DBInstanceStatus": "creating", 
         "IAMDatabaseAuthenticationEnabled": false, 
         "EngineVersion": "5.6.10a", 
         "DomainMemberships": [], 
         "DBClusterIdentifier": "aurora", 
         "StorageType": "aurora", 
-        "DbiResourceId": "db-QAUNGLWBBNYWQ2WHSAQ3KIS24I", 
+        "DbiResourceId": "db-SKKCT4Z3RM4PIYU3OTNQIPGLQI", 
         "CACertificateIdentifier": "rds-ca-2015", 
         "StorageEncrypted": false, 
         "DBInstanceClass": "db.r3.large", 
         "DbInstancePort": 0, 
-        "DBInstanceIdentifier": "aurora1"
+        "DBInstanceIdentifier": "aurora2"
     }
 }

@@ -36,7 +36,7 @@ cat $CLUSTERCONFIG | jq --arg KEY $KEY '.S3Prefix = $KEY' > newconfig.json  && m
 
 cat $CLUSTERCONFIG | jq --arg CLUSTERNAME $CLUSTERNAME '.DBClusterIdentifier = $CLUSTERNAME' > newconfig.json  && mv newconfig.json $CLUSTERCONFIG
 
-# #  Restore the cluster from s3
+#  Restore the cluster from s3
 aws rds restore-db-cluster-from-s3 --cli-input-json file://`pwd`/$CLUSTERCONFIG > clusterOutput.json
 
 # Create DB instances and associate with the DBCluster (use a different config)
@@ -50,3 +50,7 @@ cat $INSTANCECONFIG | jq --arg CLUSTERNAME $CLUSTERNAME '.DBClusterIdentifier = 
 cat $INSTANCECONFIG | jq --arg INSTANCENAME $INSTANCENAME '.DBInstanceIdentifier = $INSTANCENAME' > newconfig.json  && mv newconfig.json $INSTANCECONFIG
 
 aws rds create-db-instance --cli-input-json file://`pwd`/$INSTANCECONFIG > instanceOutput.json
+
+INSTANCENAME=$INSTANCENAME-reader
+cat $INSTANCECONFIG | jq --arg INSTANCENAME $INSTANCENAME '.DBInstanceIdentifier = $INSTANCENAME' > newconfig.json  && mv newconfig.json $INSTANCECONFIG
+aws rds create-db-instance --cli-input-json file://`pwd`/$INSTANCECONFIG > readerInstanceOutput.json

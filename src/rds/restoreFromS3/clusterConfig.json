@@ -1,16 +1,14 @@
 {
   "AvailabilityZones": [
-    "us-east-1b",
-    "us-east-1c"
+
   ],
   "BackupRetentionPeriod": 1,
   "DatabaseName": "",
   "DBClusterIdentifier": "aurora",
-  "DBClusterParameterGroupName": "resources-databaseclusterparametergroup-1bjm1p4hgxnrp",
+  "DBClusterParameterGroupName": "",
   "VpcSecurityGroupIds": [
-    "sg-de7173af"
   ],
-  "DBSubnetGroupName": "resources-databasesubnetgroup-12kyg4gim2mxn",
+  "DBSubnetGroupName": "",
   "Engine": "aurora",
   "EngineVersion": "5.6.10a",
   "Port": 3306,
@@ -28,7 +26,7 @@
   "EnableIAMDatabaseAuthentication": false,
   "SourceEngine": "mysql",
   "SourceEngineVersion": "5.6",
-  "S3BucketName": "123123123testtest",
-  "S3Prefix": "ip-10-0-1-107",
-  "S3IngestionRoleArn": "arn:aws:iam::207377804245:role/resources-AuroraRole-1WWF78FTCB45Z"
+  "S3BucketName": "",
+  "S3Prefix": "",
+  "S3IngestionRoleArn": ""
 }
